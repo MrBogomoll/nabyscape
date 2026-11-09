@@ -50,6 +50,7 @@ internal sealed class WelcomeWindow : Window
         var grid=new Grid();grid.RowDefinitions.Add(new(){Height=new GridLength(48)});grid.RowDefinitions.Add(new());Grid.SetRow(content,1);grid.Children.Add(content);
         var caption=new DockPanel{Margin=new(18,0,8,0)};
         var close=UI.CaptionButton("Close Settings",Close);close.Content="×";close.FontSize=20;close.Width=38;close.Background=Brushes.Transparent;close.Padding=new(0);System.Windows.Shell.WindowChrome.SetIsHitTestVisibleInChrome(close,true);DockPanel.SetDock(close,Dock.Right);caption.Children.Add(close);
+        var logo=BrandMark.Create(24);logo.Margin=new(0,0,10,0);caption.Children.Add(logo);
         var title=UI.Caption("Welcome to NabyScape",13);title.VerticalAlignment=VerticalAlignment.Center;caption.Children.Add(title);grid.Children.Add(caption);
         var outer=new Border{CornerRadius=new(20),BorderThickness=new(1),Child=grid};outer.SetResourceReference(Border.BackgroundProperty,"SettingsCanvas");outer.SetResourceReference(Border.BorderBrushProperty,"SettingsLine");
         void Outline(){grid.Clip=new RectangleGeometry(new Rect(0,0,Math.Max(0,grid.ActualWidth),Math.Max(0,grid.ActualHeight)),20,20);SettingsWindowOutline.Update(this,20);}

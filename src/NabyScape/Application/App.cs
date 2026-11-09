@@ -136,7 +136,7 @@ public sealed partial class App : Application
         Calendar=new(Store);Awake=new();
         Assistant=new(this,diagnosticPath!=null?new AssistantMemoryKeys():null);
         tray=new Forms.NotifyIcon{Text="NabyScape",Visible=diagnosticPath==null};
-        using(var stream=GetResourceStream(new Uri("pack://application:,,,/Assets/island.ico")).Stream) tray.Icon=new System.Drawing.Icon(stream);
+        using(var stream=GetResourceStream(new Uri("pack://application:,,,/Assets/island.ico")).Stream) tray.Icon=new System.Drawing.Icon(stream,Forms.SystemInformation.SmallIconSize);
         var menu=new Forms.ContextMenuStrip();
         menu.Items.Add(Localization.Text("Open island"),null,(_,_)=>Dispatcher.Invoke(()=>overlay?.Reveal()));
         menu.Items.Add(Localization.Text("Command bar"),null,(_,_)=>Dispatcher.Invoke(()=>overlay?.ShowCommands()));

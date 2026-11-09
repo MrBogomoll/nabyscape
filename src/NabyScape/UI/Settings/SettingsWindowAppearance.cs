@@ -46,11 +46,6 @@ public sealed partial class SettingsWindow
         materialKey=null;
         if(IsLoaded)ApplyMaterial();
     }
-    private static Path WaveMark(double width=30)
-    {
-        var mark=new Path{Data=Geometry.Parse("M 0,17 C 2,4 10,1 18,7 C 25,13 31,12 38,6 C 36,19 28,23 20,17 C 13,11 6,11 0,17 Z"),Width=width,Height=width*.6,Stretch=Stretch.Uniform,VerticalAlignment=VerticalAlignment.Center};
-        mark.SetResourceReference(Shape.FillProperty,"ControlText");return mark;
-    }
     private void WindowThemeControls()
     {
         themeChoices.Clear();var choices=new Grid{Margin=new(0,14,0,0)};choices.ColumnDefinitions.Add(new());choices.ColumnDefinitions.Add(new());

@@ -10,7 +10,7 @@
     <ApplicationIcon>Assets\island.ico</ApplicationIcon>
     <AssemblyName>NabyScape</AssemblyName>
     <RootNamespace>NabyScape</RootNamespace>
-    <Version>2.26.1-ru.7</Version>
+    <Version>2.26.1-ru.8</Version>
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
     <Title>NabyScape</Title>
     <Product>NabyScape</Product>
@@ -29,7 +29,8 @@
     <PackageReference Include="Lucene.Net.Analysis.Kuromoji" Version="4.8.0-beta00018" />
     <PackageReference Include="NTextCat" Version="0.3.65" />
     <Resource Include="Assets\island.ico" />
-    <Resource Include="Assets\naby-chrome.png" />
+    <Resource Include="Assets\brand-avatar.png" />
+    <EmbeddedResource Include="Assets\brand-mark.svg" LogicalName="NabyScape.BrandMark.svg" />
     <Resource Include="Assets\Fonts\Manrope-Medium.ttf" />
     <Resource Include="Assets\Fonts\Manrope-SemiBold.ttf" />
     <Resource Include="Assets\Fonts\Manrope-Bold.ttf" />

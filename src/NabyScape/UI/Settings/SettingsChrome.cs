@@ -13,7 +13,7 @@ public sealed partial class SettingsWindow
         var frame=new Grid();windowShell=frame;frame.RowDefinitions.Add(new(){Height=new GridLength(58)});frame.RowDefinitions.Add(new());
         // A separate caption makes the draggable part of the window visible.
         var bar=new Grid{VerticalAlignment=VerticalAlignment.Top,Height=58};bar.SetResourceReference(Panel.BackgroundProperty,"SettingsCaption");bar.ColumnDefinitions.Add(new());bar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
-        var caption=UI.Row(WaveMark(30),UI.Caption("NabyScape Settings",14));caption.Margin=new(26,0,0,0);caption.VerticalAlignment=VerticalAlignment.Center;((FrameworkElement)caption.Children[1]).Margin=new(12,0,0,0);caption.IsHitTestVisible=false;bar.Children.Add(caption);
+        var caption=UI.Row(BrandMark.Create(32),UI.Caption("NabyScape Settings",14));caption.Margin=new(26,0,0,0);caption.VerticalAlignment=VerticalAlignment.Center;((FrameworkElement)caption.Children[1]).Margin=new(12,0,0,0);caption.IsHitTestVisible=false;bar.Children.Add(caption);
         var grip=new Grid{Width=24,Height=14,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center,IsHitTestVisible=false};
         for(int i=0;i<6;i++){var dot=new System.Windows.Shapes.Ellipse{Width=3,Height=3,HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Top,Margin=new((i%3)*9,(i/3)*9,0,0)};dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty,"SettingsQuiet");grip.Children.Add(dot);}Grid.SetColumnSpan(grip,2);bar.Children.Add(grip);
         var actions=new StackPanel{Orientation=Orientation.Horizontal};Grid.SetColumn(actions,1);bar.Children.Add(actions);

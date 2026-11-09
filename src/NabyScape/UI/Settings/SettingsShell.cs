@@ -16,7 +16,7 @@ public sealed partial class SettingsWindow
     private FrameworkElement SidebarBrand()
     {
         var row=new Grid{Margin=new(22,12,16,20)};row.ColumnDefinitions.Add(new(){Width=GridLength.Auto});row.ColumnDefinitions.Add(new());
-        var naby=new System.Windows.Shapes.Path{Data=Geometry.Parse("M 0,17 C 2,4 10,1 18,7 C 25,13 31,12 38,6 C 36,19 28,23 20,17 C 13,11 6,11 0,17 Z"),Fill=SettingsTheme.Bone,Width=38,Height=24,Stretch=Stretch.Uniform,Margin=new(0,0,12,0),VerticalAlignment=VerticalAlignment.Center};row.Children.Add(naby);
+        var naby=BrandMark.Create(38);naby.Margin=new(0,0,12,0);row.Children.Add(naby);
         var words=new StackPanel{VerticalAlignment=VerticalAlignment.Center};Grid.SetColumn(words,1);
         TextBlock Word(string text,Brush color){var t=new TextBlock{Text=text,FontFamily=SettingsTheme.Display,FontWeight=FontWeights.Bold,FontSize=17,Foreground=color,LineHeight=17,LineStackingStrategy=LineStackingStrategy.BlockLineHeight};return t;}
         words.Children.Add(Word("NABY",SettingsTheme.Bone));words.Children.Add(Word("SCAPE",SettingsTheme.Quiet));

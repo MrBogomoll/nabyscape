@@ -44,6 +44,6 @@ internal static class NoticeAvatar
     }
     private static ImageSource Load()
     {
-        var bitmap=new BitmapImage();bitmap.BeginInit();bitmap.UriSource=new Uri("pack://application:,,,/Assets/naby-chrome.png");bitmap.DecodePixelWidth=96;bitmap.CacheOption=BitmapCacheOption.OnLoad;bitmap.EndInit();bitmap.Freeze();return bitmap;
+        var bitmap=new BitmapImage();bitmap.BeginInit();bitmap.UriSource=new Uri("pack://application:,,,/Assets/brand-avatar.png");bitmap.DecodePixelWidth=96;bitmap.CacheOption=BitmapCacheOption.OnLoad;bitmap.EndInit();bitmap.Freeze();return bitmap;
     }
 }
