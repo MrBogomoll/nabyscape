@@ -143,6 +143,10 @@ public sealed partial class App : Application
         menu.Items.Add(Localization.Text("Notifications"),null,(_,_)=>Dispatcher.Invoke(OpenNotifications));
         menu.Items.Add(Localization.Text("Send test notification"),null,(_,_)=>Dispatcher.Invoke(SendTestNotification));
         menu.Items.Add(Localization.Text("Settings"),null,(_,_)=>Dispatcher.Invoke(ShowSettings));
+        var wrapTabs=new Forms.ToolStripMenuItem(Localization.Text("Wrap tabs when scrolling")){CheckOnClick=true,Checked=Settings.WheelWrapTabs};
+        wrapTabs.Click+=(_,_)=>Dispatcher.Invoke(()=>{Settings.WheelWrapTabs=wrapTabs.Checked;ChangeSettings();});
+        menu.Opening+=(_,_)=>wrapTabs.Checked=Settings.WheelWrapTabs;menu.Items.Add(wrapTabs);
+
         menu.Items.Add(Localization.Text("Move & resize island"),null,(_,_)=>Dispatcher.Invoke(()=>overlay?.ToggleDockEditing()));
         menu.Items.Add(Localization.Text("AI companion"),null,(_,_)=>Dispatcher.Invoke(ShowAssistant));
         var wakeMenu=menu.Items.Add(Localization.Text("Resume wake word"),null,(_,_)=>Dispatcher.Invoke(()=>Assistant.ToggleWakeListening()));

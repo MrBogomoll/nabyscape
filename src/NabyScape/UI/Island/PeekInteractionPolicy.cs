@@ -17,6 +17,15 @@ internal sealed class PeekWheelAccumulator
     }
     internal void Reset(){total=0;last=0;}
 }
+internal static class WheelTabNavigation
+{
+    internal static int Target(int current,int steps,int count,bool wrap)
+    {
+        if(count<=0)return -1;
+        long target=(long)Math.Clamp(current,0,count-1)+steps;
+        return wrap?(int)((target%count+count)%count):(int)Math.Clamp(target,0,count-1);
+    }
+}
 internal static class VisibilityPolicy
 {
     // Own/menu and shell foregrounds must not replace the external window sampled before them.
@@ -49,6 +58,12 @@ internal static class PeekInteractionTests
         wheel.Reset();test("Fractional wheel remainder is retained",wheel.Push(150,1500)==1 && wheel.Push(90,1510)==1);
         wheel.Reset();test("Direction changes discard stale fractional deltas",wheel.Push(60,2000)==0 && wheel.Push(-60,2010)==0 && wheel.Push(-60,2020)==-1);
         wheel.Reset();test("A pause clears an unfinished wheel notch",wheel.Push(60,3000)==0 && wheel.Push(60,3400)==0 && wheel.Push(60,3410)==1);
+        test("Wheel tabs stop at both edges when wrapping is off",WheelTabNavigation.Target(4,5,6,false)==5 && WheelTabNavigation.Target(1,-5,6,false)==0);
+        test("Wheel tabs wrap forwards and backwards when enabled",WheelTabNavigation.Target(5,1,6,true)==0 && WheelTabNavigation.Target(0,-1,6,true)==5);
+        test("Wheel wrapping retains all five rapid steps",WheelTabNavigation.Target(4,5,6,true)==3 && WheelTabNavigation.Target(1,-5,6,true)==2);
+        test("Wheel navigation handles empty and single tab lists",WheelTabNavigation.Target(0,5,0,true)==-1 && WheelTabNavigation.Target(0,-5,1,true)==0);
+        var wrapSettings=new Settings{WheelWrapTabs=true};
+        test("Wheel wrap choice persists and defaults to stopping",!new Settings().WheelWrapTabs && System.Text.Json.JsonSerializer.Deserialize<Settings>(System.Text.Json.JsonSerializer.Serialize(wrapSettings))!.WheelWrapTabs);
         var appA=new IntPtr(101);var appB=new IntPtr(202);
         test("Tray show uses the last eligible external foreground",VisibilityPolicy.LatestExternalForeground(IntPtr.Zero,appA,true)==appA);
         test("External foreground tracking replaces the previous app",VisibilityPolicy.LatestExternalForeground(appB,appA,true)==appB);

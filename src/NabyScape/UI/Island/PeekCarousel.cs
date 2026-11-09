@@ -140,8 +140,8 @@ public sealed partial class OverlayWindow
     {if(!peeking || assistantPeeking)return;detailDelay.Stop();peekDetailed=true;automaticPreview=false;activityDismiss.Stop();ApplyPeekGeometry();UpdateToolPeeks();motion.Go(surface,IslandSurface.SurfaceHeightProperty,PeekExpandedHeight,app.Settings.AnimationMs);}
     internal void SelectPeek(string id)
     {if(noticeShowing || !peeking || assistantPeeking || !PeekPages().Contains(id))return;PromotePeek();var ids=PeekPages();int old=Array.IndexOf(ids,peekId),next=Array.IndexOf(ids,id);double start=(next-old)*PeekWidth;if(Math.Abs(next-old)>1){peekId=id;LayoutPeek(0,false);peekViews[id].Opacity=.65;Motion.Fade(peekViews[id],1,160);UpdatePeekDeck();return;}if(next==old){LayoutPeek(0,true);return;}peekId=id;LayoutPeek(start,false);UpdatePeekDeck();LayoutPeek(0,true);WakeLiveRendering();}
-    internal void NavigatePeek(int direction)
-    {var ids=PeekPages();int index=Array.IndexOf(ids,peekId);if(ids.Length>0)SelectPeek(ids[Math.Clamp(index+direction,0,ids.Length-1)]);}
+    internal void NavigatePeek(int direction,bool wheel=false)
+    {var ids=PeekPages();int index=Array.IndexOf(ids,peekId);if(ids.Length>0)SelectPeek(ids[WheelTabNavigation.Target(index,direction,ids.Length,wheel && app.Settings.WheelWrapTabs)]);}
     private void LayoutPeek(double offset,bool animate)
     {
         var ids=PeekPages();int index=Array.IndexOf(ids,peekId);
@@ -166,7 +166,7 @@ public sealed partial class OverlayWindow
         // Only the focused multiline editor keeps its native vertical scrolling.
         if(!VisibilityPolicy.CarouselOwnsWheel(peeking,horizontal,peekNote?.IsKeyboardFocusWithin==true,IsPeekNoteSource(source)))return false;
         int direction=peekWheel.Push(horizontal?delta:-delta,Environment.TickCount64);
-        if(direction!=0)NavigatePeek(direction);
+        if(direction!=0)NavigatePeek(direction,true);
         return true;
     }
     private bool IsPeekNoteSource(DependencyObject? source)

@@ -108,5 +108,7 @@
   "Previous version: ": "Предыдущая версия: ",
   " · saved ": " · сохранено ",
   "The saved recovery copy is unavailable or could not be verified.": "Сохранённая копия для восстановления недоступна или не прошла проверку.",
-  "{0} downloads ready": "Готовых загрузок: {0}"
+  "{0} downloads ready": "Готовых загрузок: {0}",
+  "Wrap tabs when scrolling": "Переключать вкладки по кругу",
+  "When enabled, the wheel continues from the last tab to the first and back. When disabled, it stops at the edges.": "Включено: колёсико переходит с последней вкладки на первую и обратно. Выключено: переключение останавливается на краях."
 }

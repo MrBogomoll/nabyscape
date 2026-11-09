@@ -28,7 +28,7 @@ public sealed partial class OverlayWindow
             if(!horizontal && node is ScrollViewer viewer && (viewer.Tag as string=="panel-content-scroll" || viewer.ScrollableHeight>1 && !(viewer==scroll && activePage=="focus" && bodyWidth>=310 && viewer.ScrollableHeight<48)))return false;
         }
         int direction=panelWheel.Push(horizontal?delta:-delta,Environment.TickCount64);
-        if(direction!=0)CyclePage(direction);return true;
+        if(direction!=0)CyclePage(direction,true);return true;
     }
     private void InitializePanelSwipe()
     {

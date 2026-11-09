@@ -78,6 +78,7 @@ public sealed partial class Settings
     public bool ToolEnabled(string id)=>Widgets.FirstOrDefault(t=>t.Id==id)?.Enabled ?? (Widgets.Any(w=>w.Id=="tools" && w.Enabled) && Tools.Any(t=>t.Id==id && t.Enabled));
     public string Performance { get; set; } = "Auto";
     public string WheelAction { get; set; } = "volume";
+    public bool WheelWrapTabs { get; set; }
     public string MiddleAction { get; set; } = "toggle";
     public int VolumeStep { get; set; } = 2;
     public bool HotkeyEnabled { get; set; } = true;

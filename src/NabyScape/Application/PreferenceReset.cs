@@ -19,7 +19,7 @@ internal static class PreferenceReset
         ["Appearance"]="Preset Radius Background Accent Opacity SettingsMaterial GlassStyle GlassStrength AlbumAccent ControlFill ControlBorder SelectionFill CategoryStyle BoldMediaTitle BoldHeadings RecentColors".Split(' '),
         ["Layout"]="FollowMonitorAnimation FollowMonitorDuration DockUnlocked PanelAutoHeight Width Height Horizontal DockEdge DockVertical DockInset Top Monitor DisplayMode CompactLayout PanelWidth PanelMaxHeight PanelPadding PanelScale SectionGap".Split(' '),
         ["Content"]="HoverFollowsWidgets Widgets Tools HoverViews FocusMinutes BreakMinutes".Split(' '),
-        ["Controls"]="HoverPeek TwoStageHover HoverWidth HoverHeight HoverDelayMs HoverDetailDelayMs SwipeDistance PanelSwipe DropReveal DetachablePreviews CoverGestures WheelAction MiddleAction VolumeStep HotkeyEnabled HotkeyKey HotkeyModifiers".Split(' '),
+        ["Controls"]="HoverPeek TwoStageHover HoverWidth HoverHeight HoverDelayMs HoverDetailDelayMs SwipeDistance PanelSwipe DropReveal DetachablePreviews CoverGestures WheelAction WheelWrapTabs MiddleAction VolumeStep HotkeyEnabled HotkeyKey HotkeyModifiers".Split(' '),
         ["Audio"]="MediaIntegrationEnabled WaveformSource WaveformSensitivity LyricsEnabled LyricsAnimation LyricsTextMode LyricsOffset ClosedMediaIcon ClosedMediaContent ReactiveFeedback WaveformIdleMotion VolumeFeedback BrightnessFeedback".Split(' '),
         ["System"]="Clock24Hour ClockSeconds ShowDate MonitorNetwork MonitorStorage MonitorProcesses".Split(' '),
         ["Launch"]="LaunchStyle".Split(' '),

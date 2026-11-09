@@ -187,6 +187,7 @@
   ],
   "Performance": "Maksimal",
   "WheelAction": "pages",
+  "WheelWrapTabs": false,
   "MiddleAction": "toggle",
   "VolumeStep": 2,
   "HotkeyEnabled": true,
