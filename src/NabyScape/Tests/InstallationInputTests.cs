@@ -10,6 +10,12 @@ internal static class InstallationInputTests
     {
         static void Check(bool value){if(!value)throw new Exception("Assertion failed");}
         static void Reject(Action action){try{action();}catch(IOException){return;}catch(InvalidDataException){return;}throw new Exception("Unsafe input accepted");}
+        test("Installed icon uses the current embedded artwork at small and large sizes",()=>
+        {
+            string root=Path.Combine(Path.GetTempPath(),"NabyScape-brand-icon-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+            try{string file=Installer.WriteIcon(root);foreach(int size in new[]{16,32,64}){using var icon=new System.Drawing.Icon(file,new System.Drawing.Size(size,size));Check(icon.Width==size && icon.Height==size);}}
+            finally{Directory.Delete(root,true);}
+        });
         test("Fresh profiles use the complete bundled preferences and keep personal paths out",()=>
         {
             using var stream=typeof(FactoryDefaults).Assembly.GetManifestResourceStream("NabyScape.DefaultPreferences.json")!;

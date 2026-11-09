@@ -29,6 +29,10 @@ internal static class SettingsPalette
     }
     private static void BindElement(FrameworkElement element)
     {
+        if(element is Button primary && (bool)primary.GetValue(UI.PrimaryActionProperty))
+        {
+            primary.SetResourceReference(Control.BackgroundProperty,"SettingsPrimaryFill");primary.SetResourceReference(Control.ForegroundProperty,"SettingsPrimaryText");primary.SetResourceReference(Control.BorderBrushProperty,"SettingsPrimaryBorder");primary.BorderThickness=new Thickness(1);
+        }
         // Bind the legacy construction helpers to semantic window resources once.
         // New controls and popup descendants receive the same treatment on load.
         var values=element.GetLocalValueEnumerator();var replacements=new List<(DependencyProperty,string)>();
@@ -73,6 +77,8 @@ internal static class SettingsPalette
         d["MutedText"]=d["SettingsQuiet"];
         d["BodyText"]=d["ControlText"];
         Add("Accent",light?"#101010":"#F2F2F2");Add("AccentText",light?"#FFFFFF":"#151515");
+        Add("SettingsPrimaryFill",light?"#DCE3E8":"#F2F2F2");Add("SettingsPrimaryText",light?"#202A32":"#151515");Add("SettingsPrimaryBorder",light?"#A5ADB3":"#F2F2F2");
+        Add("SettingsMapFill",light?"#E9EEF1":"#252D35");Add("SettingsMapGuide",light?"#87949F":"#687683");
         d["CheckedFill"]=d["Accent"];d["CheckedText"]=d["AccentText"];
         Add("SwitchKnob",light?"#909090":"#DDDDDD");Add("TrackFill",light?"#A2A2A2":"#777777");
         d["ProgressFill"]=d["Accent"];d["ProgressTrack"]=d["TrackFill"];
@@ -101,6 +107,7 @@ internal static class SettingsPalette
             foreach(string key in new[]{"SettingsVoid","SettingsSidebar","SettingsCard","SettingsRaised","SettingsCanvas","SettingsCaption","ControlFill"})d[key]=SystemColors.WindowBrush;
             foreach(string key in new[]{"ControlText","BodyText","SettingsQuiet","MutedText","SettingsLine","SettingsLineSoft","ControlBorder"})d[key]=SystemColors.WindowTextBrush;
             d["Accent"]=d["CheckedFill"]=d["SettingsSelected"]=d["SelectionFill"]=SystemColors.HighlightBrush;
+            d["SettingsPrimaryFill"]=SystemColors.HighlightBrush;d["SettingsPrimaryText"]=SystemColors.HighlightTextBrush;d["SettingsPrimaryBorder"]=SystemColors.WindowTextBrush;d["SettingsMapFill"]=SystemColors.WindowBrush;d["SettingsMapGuide"]=SystemColors.WindowTextBrush;
             d["AccentText"]=d["CheckedText"]=d["SettingsSelectedText"]=d["SelectionText"]=SystemColors.HighlightTextBrush;
         }
         return d;

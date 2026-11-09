@@ -42,6 +42,7 @@ internal static class UpdateHandoff
     internal static string Folder=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"NabyScape-Updates");
     internal static async System.Threading.Tasks.Task Prepare(App app,bool restore=false)
     {
+        if(!app.Updates.ChannelEnabled)throw new InvalidOperationException(Localization.Text("Upstream updates are disabled in this Russian build to preserve its changes."));
         if(!TryBegin())return;
         try
         {
@@ -142,6 +143,7 @@ internal static class UpdateHandoff
     }
     internal static int Run()
     {
+        if(!OfficialUpdates.ProductionChannelEnabled)return 1;
         string? snapshot=null;bool installationStarted=false;UpdateHandoffData? data=null;
         try
         {

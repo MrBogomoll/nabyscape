@@ -48,10 +48,11 @@ internal static class UI
     internal static bool IsHeading(TextBlock text)=>ReferenceEquals(text.Tag,HeadingTag);
     public static TextBlock Label(string text)
     {var heading=Heading(text,11,Muted);heading.FontWeight=FontWeights.Medium;heading.Margin=new(0,0,0,10);return heading;}
+    internal static readonly DependencyProperty PrimaryActionProperty=DependencyProperty.RegisterAttached("PrimaryAction",typeof(bool),typeof(UI),new PropertyMetadata(false));
     public static Button Button(string text,Action action,bool primary=false)
     {
         var b=new Button{Content=text,Tag=new CornerRadius(8)};AutomationProperties.SetName(b,text);
-        if(primary) { b.SetResourceReference(Control.BackgroundProperty,"Accent");b.SetResourceReference(Control.ForegroundProperty,"AccentText");b.FontWeight=FontWeights.SemiBold;b.BorderThickness=new(0); }
+        if(primary) { b.SetValue(PrimaryActionProperty,true);b.SetResourceReference(Control.BackgroundProperty,"Accent");b.SetResourceReference(Control.ForegroundProperty,"AccentText");b.FontWeight=FontWeights.SemiBold;b.BorderThickness=new(0); }
         Motion.Button(b);b.Click+=(_,_)=>action();return b;
     }
     public static StackPanel Row(params UIElement[] elements)

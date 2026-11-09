@@ -84,7 +84,7 @@ internal sealed class WeatherView : UserControl
             var places=await app.Weather.Search(search.Text,request.Token);if(!IsLoaded || request!=searchRequest)return;
             foreach(var place in places)
             {
-                var button=UI.Button(place.Name,()=>{app.Settings.WeatherCity=place.Name;app.Settings.WeatherLatitude=place.Latitude;app.Settings.WeatherLongitude=place.Longitude;location.Visibility=Visibility.Collapsed;app.ChangeSettings();});button.FontSize=11;button.Margin=new(0,2,0,2);button.HorizontalContentAlignment=HorizontalAlignment.Left;button.Content=new TextBlock{Text=place.Name,TextTrimming=TextTrimming.CharacterEllipsis,Foreground=Brushes.White};results.Children.Add(button);
+                var button=UI.Button(place.Name,()=>{app.Settings.WeatherCity=place.Name;app.Settings.WeatherLatitude=place.Latitude;app.Settings.WeatherLongitude=place.Longitude;location.Visibility=Visibility.Collapsed;app.ChangeSettings();});button.FontSize=11;button.Margin=new(0,2,0,2);button.HorizontalContentAlignment=HorizontalAlignment.Left;var label=new TextBlock{Text=place.Name,TextTrimming=TextTrimming.CharacterEllipsis};label.SetResourceReference(TextBlock.ForegroundProperty,"ControlText");button.Content=label;results.Children.Add(button);
             }
             status.Text=places.Length==0?Localization.Text("No cities found. Try a nearby city or include the country."):Localization.Text("Choose your city above.");
         }

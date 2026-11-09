@@ -31,6 +31,8 @@ internal static class SettingsThemeDiagnostics
             check("Obsolete material controls are absent",!Tree(window).OfType<ComboBox>().Any(c=>UI.Identity(c)=="Settings material"));
             var search=Tree(window).OfType<TextBox>().First(t=>UI.Identity(t)=="Search settings");search.Focus();await Task.Delay(50);
             check("Search has no nested keyboard focus outline",search.FocusVisualStyle==null && search.BorderThickness==new Thickness(0));
+            bool updateBlocked=false;try{await UpdateHandoff.Prepare(app);}catch(InvalidOperationException){updateBlocked=true;}
+            check("Production update handoff is blocked before any installation",updateBlocked && !app.Updates.ChannelEnabled);
             var handle=new System.Windows.Interop.WindowInteropHelper(window).Handle;
             check("Window uses genuine per-pixel transparency",window.AllowsTransparency && (GetWindowLong(handle,-20)&0x80000)!=0);
             IntPtr Hit(double x,double y){var point=window.PointToScreen(new Point(x,y));return SendMessage(handle,0x84,IntPtr.Zero,new IntPtr(((int)point.Y<<16)|((int)point.X&0xffff)));}
@@ -55,9 +57,12 @@ internal static class SettingsThemeDiagnostics
             foreach(string theme in new[]{"Light","Dark"})
             {
                 app.Settings.WindowTheme=theme;window.ApplyWindowAppearance();
-                foreach(string category in new[]{"Home","Visibility","Audio","Application","AI","Weather"})
+                foreach(string category in new[]{"Home","Layout","Launch","Visibility","Audio","Notifications","Application","AI","Weather"})
                 {
-                    window.OpenCategory(category);await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-"+category+".png"));
+                    window.OpenCategory(category);await Task.Delay(60);
+                    var primaryButtons=Tree(window).OfType<Button>().Where(b=>(bool)b.GetValue(UI.PrimaryActionProperty)).ToArray();
+                    if(primaryButtons.Length>0)check(theme+" primary buttons follow the palette in "+category,primaryButtons.All(b=>b.Background==window.FindResource("SettingsPrimaryFill") && b.Foreground==window.FindResource("SettingsPrimaryText")));
+                    Save(window,Path.Combine(directory,theme+"-"+category+".png"));
                 }
                 window.OpenCategory("Appearance");window.Width=600;window.Height=650;await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-narrow.png"));
                 check(theme+" narrow window retains theme choice",Tree(window).OfType<Button>().Any(b=>UI.Identity(b)=="Light theme" && b.ActualWidth>100));

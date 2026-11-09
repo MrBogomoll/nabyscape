@@ -22,6 +22,7 @@ internal sealed class OfficialUpdates : IDisposable
     private readonly HttpClient http;
     // The original releases do not contain this fork's localization. Only injected test transports
     // exercise the upstream protocol until a separate release channel is configured for the fork.
+    internal static bool ProductionChannelEnabled=>false;
     internal bool ChannelEnabled { get; }
     private readonly Store store;
     private readonly string stagingDirectory;
@@ -39,7 +40,7 @@ internal sealed class OfficialUpdates : IDisposable
     internal event Action? DownloadReady;
     internal OfficialUpdates(Store store,HttpMessageHandler? transport=null,Action<string,Version>? inspect=null,string? stagingDirectory=null)
     {
-        ChannelEnabled=transport!=null;
+        ChannelEnabled=ProductionChannelEnabled || transport!=null;
         if(!ChannelEnabled)Status=Localization.Text("Upstream updates are disabled in this Russian build to preserve its changes.");
         this.store=store;this.stagingDirectory=Path.GetFullPath(stagingDirectory??UpdateHandoff.Folder);this.inspect=inspect??InspectSetup;state=store.Load<UpdateState>("update-state");
         http=new(transport??new HttpClientHandler{AllowAutoRedirect=false});http.Timeout=TimeSpan.FromSeconds(45);

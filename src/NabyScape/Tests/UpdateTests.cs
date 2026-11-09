@@ -18,6 +18,18 @@ internal static class UpdateTests
     {
         static void Assert(bool pass){if(!pass)throw new Exception("Update fixture failed");}
         static void Reject(Action action){try{action();}catch(Exception ex) when(ex is System.Text.Json.JsonException or InvalidDataException or InvalidOperationException or UriFormatException or System.Collections.Generic.KeyNotFoundException){return;}throw new Exception("Invalid input accepted");}
+        test("Fork protection blocks production checks downloads and cached updater helpers",()=>
+        {
+            string root=Path.Combine(Path.GetTempPath(),"NabyScape-fork-lock-"+Guid.NewGuid().ToString("N"));
+            try
+            {
+                using var updates=new OfficialUpdates(new Store(root));
+                updates.Check(true,true,true).GetAwaiter().GetResult();updates.Download().GetAwaiter().GetResult();
+                Assert(!OfficialUpdates.ProductionChannelEnabled && !updates.ChannelEnabled && updates.Available==null && updates.VerifiedSetup==null);
+                Assert(UpdateHandoff.Run()==1);
+            }
+            finally{if(Directory.Exists(root))Directory.Delete(root,true);}
+        });
         test("Updates accept newer stable and ignore equal/older releases",()=>{Assert(OfficialUpdates.Parse(Release("2.4.3"),new(2,4,2))?.Version==new Version(2,4,3));Assert(OfficialUpdates.Parse(Release("2.4.3"),new(2,4,3))==null && OfficialUpdates.Parse(Release("2.4.3"),new(3,0,0))==null);});
         test("Updates reject malformed host schema prerelease and wrong architecture assets",()=>
         {Reject(()=>OfficialUpdates.Parse("{}",new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release(host:"http://github.com/BillyNabil/nabyscape"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release(host:"https://github.com.evil/BillyNabil/nabyscape"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release(name:"NabyScape-win-arm64-Setup.exe"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release().Replace("\"prerelease\":false","\"prerelease\":true"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release("2.4.3-beta"),new(2,4,2)));});

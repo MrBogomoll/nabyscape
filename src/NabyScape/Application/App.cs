@@ -105,6 +105,7 @@ public sealed partial class App : Application
     {
         var startupClock=System.Diagnostics.Stopwatch.StartNew();
         PrivateDiagnostics.SetServiceState(DiagnosticService.Application,DiagnosticServiceState.Starting);
+        InitializeAppBranding();
         base.OnStartup(e);
         bool assistantFixture=Array.Exists(e.Args,a=>a=="--assistant-only") && Array.Exists(e.Args,a=>a=="--diagnostics");
         bool showcaseFixture=Array.Exists(e.Args,a=>a=="--showcase") && Array.Exists(e.Args,a=>a=="--diagnostics");

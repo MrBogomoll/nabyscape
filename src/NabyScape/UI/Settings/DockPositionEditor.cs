@@ -21,7 +21,7 @@ internal sealed class DockPositionEditor : UserControl
     internal DockPositionEditor(App app,Action save)
     {
         this.app=app;this.save=save;UI.LocalizedName(x,"Horizontal position percent");UI.LocalizedName(y,"Vertical dock position");var p=new StackPanel();
-        p.Children.Add(new Border{Child=map,CornerRadius=new(10),BorderBrush=UI.Brush("#343C48"),BorderThickness=new(.7),Background=UI.Brush("#10151D"),Margin=new(0,0,0,10)});
+        var surface=new Border{Child=map,CornerRadius=new(10),BorderThickness=new(1),Margin=new(0,0,0,10)};surface.SetResourceReference(Border.BackgroundProperty,"SettingsMapFill");surface.SetResourceReference(Border.BorderBrushProperty,"ControlBorder");p.Children.Add(surface);
         var info=new DockPanel();var center=UI.CaptionButton("Center",()=>{app.Settings.Horizontal=50;app.Settings.DockVertical=50;Changed();});center.FontSize=11;center.Padding=new(12,5,12,5);DockPanel.SetDock(center,Dock.Right);info.Children.Add(center);info.Children.Add(alignment);p.Children.Add(info);coordinates.Margin=new(0,3,0,12);p.Children.Add(coordinates);
         void Field(string name,Slider slider,TextBox input,TextBlock label)
         {var row=new DockPanel();input.Width=82;input.Margin=new(8,0,0,0);input.Padding=new(6,4,6,4);DockPanel.SetDock(input,Dock.Right);row.Children.Add(input);row.Children.Add(label);p.Children.Add(row);slider.Margin=new(0,8,0,14);UI.LocalizedName(slider,name);p.Children.Add(slider);}
@@ -43,7 +43,7 @@ internal sealed class DockPositionEditor : UserControl
         vertical.IsEnabled=!(s.Preset=="Mac" && s.DockEdge=="Top");
         double left=(screen.WorkingArea.Width/scale-s.Width)*s.Horizontal/100,top=side?(height-s.Height)*s.DockVertical/100:bottom?height-s.Height-s.DockInset:s.Top;
         if(side)left=s.DockEdge=="Left"?s.DockInset:screen.WorkingArea.Width/scale-s.Width-s.DockInset;
-        double off=side?s.DockVertical-50:s.Horizontal-50;alignment.Text=Math.Abs(off)<.05?Localization.Text("Centered on this screen"):Localization.Format(side?(off<0?"{0:0.#}% above center":"{0:0.#}% below center"):(off<0?"{0:0.#}% left of center":"{0:0.#}% right of center"),Math.Abs(off));alignment.Foreground=Math.Abs(off)<.05?UI.Brush("#A4CEC0"):UI.Muted;
+        double off=side?s.DockVertical-50:s.Horizontal-50;alignment.Text=Math.Abs(off)<.05?Localization.Text("Centered on this screen"):Localization.Format(side?(off<0?"{0:0.#}% above center":"{0:0.#}% below center"):(off<0?"{0:0.#}% left of center":"{0:0.#}% right of center"),Math.Abs(off));alignment.SetResourceReference(TextBlock.ForegroundProperty,"SettingsQuiet");
         coordinates.Text=Localization.Format("Left {0:0} px · Top {1:0} px · {2:0}% display scaling",left,top,scale*100);syncing=false;Draw();
     }
     private void Drag(Point point)
@@ -57,7 +57,7 @@ internal sealed class DockPositionEditor : UserControl
     private void Draw()
     {
         if(map.ActualWidth<=32)return;map.Children.Clear();double w=map.ActualWidth-32,h=map.Height-24;var s=app.Settings;
-        void Line(double a,double b,double c,double d){map.Children.Add(new Line{X1=a,Y1=b,X2=c,Y2=d,Stroke=UI.Brush("#415064"),StrokeThickness=.7,StrokeDashArray=new DoubleCollection{3,4},IsHitTestVisible=false});}
+        void Line(double a,double b,double c,double d){var guide=new Line{X1=a,Y1=b,X2=c,Y2=d,StrokeThickness=1,StrokeDashArray=new DoubleCollection{3,4},IsHitTestVisible=false};guide.SetResourceReference(Shape.StrokeProperty,"SettingsMapGuide");map.Children.Add(guide);}
         Line(16+w/2,8,16+w/2,h+16);Line(12,12+h/2,w+20,12+h/2);
         double dx=s.Horizontal/100,dy=s.DockEdge=="Bottom"?1:s.DockEdge is "Left" or "Right"?s.DockVertical/100:s.DockEdge=="Floating" || s.Preset!="Mac"?s.Top/Math.Max(1,vertical.Maximum):0;
         if(s.DockEdge=="Left")dx=0;if(s.DockEdge=="Right")dx=1;

@@ -73,6 +73,7 @@ internal static class Installer
             File.Copy(source,executable+".new",true);File.Move(executable+".new",executable,true);
         }
         RemoveRetiredHostFiles(target,source);
+        string installedIcon=WriteIcon(target);
         File.WriteAllText(Path.Combine(target,"Uninstall.ps1"),Uninstaller,new System.Text.UTF8Encoding(true));
         foreach(var name in new[]{"LICENSE","LUCIDE-LICENSE.txt","MANROPE-OFL.txt","NAudio-LICENSE.txt","System.Speech-LICENSE.txt","DOTNET-LICENSE.txt","DOTNET-ThirdPartyNotices.txt","ROMAJI-ThirdPartyNotices.txt","LYRICS-LANGUAGE-LICENSE.txt"})
         {
@@ -84,9 +85,9 @@ internal static class Installer
         {
             var type=Type.GetTypeFromProgID("WScript.Shell") ?? throw new IOException(Localization.Text("The Windows shortcut service is unavailable."));
             shell=Activator.CreateInstance(type);dynamic dynamicShell=shell!;shortcut=dynamicShell.CreateShortcut(ShortcutPath);dynamic link=shortcut;
-            link.TargetPath=executable;link.WorkingDirectory=target;link.Description=Localization.Text("NabyScape for Windows");link.IconLocation=executable+",0";link.Save();
+            link.TargetPath=executable;link.WorkingDirectory=target;link.Description=Localization.Text("NabyScape for Windows");link.IconLocation=installedIcon+",0";link.Save();
             object uninstallLink=dynamicShell.CreateShortcut(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"Uninstall NabyScape.lnk"));
-            try{dynamic uninstall=uninstallLink;uninstall.TargetPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),@"WindowsPowerShell\v1.0\powershell.exe");uninstall.Arguments="-NoProfile -ExecutionPolicy Bypass -File \""+Path.Combine(target,"Uninstall.ps1")+"\"";uninstall.WorkingDirectory=target;uninstall.Description=Localization.Text("Remove NabyScape and optionally all downloaded speech models and personal data");uninstall.IconLocation=executable+",0";uninstall.Save();}
+            try{dynamic uninstall=uninstallLink;uninstall.TargetPath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),@"WindowsPowerShell\v1.0\powershell.exe");uninstall.Arguments="-NoProfile -ExecutionPolicy Bypass -File \""+Path.Combine(target,"Uninstall.ps1")+"\"";uninstall.WorkingDirectory=target;uninstall.Description=Localization.Text("Remove NabyScape and optionally all downloaded speech models and personal data");uninstall.IconLocation=installedIcon+",0";uninstall.Save();}
             finally{if(Marshal.IsComObject(uninstallLink))Marshal.FinalReleaseComObject(uninstallLink);}
             foreach(string legacyName in new[]{"Luma Island.lnk","BillyNabila Island.lnk"})
             {
@@ -101,7 +102,7 @@ internal static class Installer
         }
         finally {if(shortcut!=null)Marshal.FinalReleaseComObject(shortcut);if(shell!=null)Marshal.FinalReleaseComObject(shell);}
         using var key=Registry.CurrentUser.CreateSubKey(UninstallKey);
-        key.SetValue("DisplayName","NabyScape");key.SetValue("DisplayVersion",typeof(App).Assembly.GetName().Version!.ToString(3));key.SetValue("Publisher","NabyScape");key.SetValue("InstallLocation",target);key.SetValue("DisplayIcon",executable);
+        key.SetValue("DisplayName","NabyScape");key.SetValue("DisplayVersion",typeof(App).Assembly.GetName().Version!.ToString(3));key.SetValue("Publisher","NabyScape");key.SetValue("InstallLocation",target);key.SetValue("DisplayIcon",installedIcon);
         key.SetValue("UninstallString","powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \""+Path.Combine(target,"Uninstall.ps1")+"\"");
         key.SetValue("QuietUninstallString","powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \""+Path.Combine(target,"Uninstall.ps1")+"\" -Quiet");
         key.SetValue("NoModify",1,RegistryValueKind.DWord);key.SetValue("NoRepair",1,RegistryValueKind.DWord);key.SetValue("EstimatedSize",(int)(new FileInfo(executable).Length/1024),RegistryValueKind.DWord);
@@ -126,6 +127,16 @@ internal static class Installer
         }
     }
     // Only migration cleanup: the application no longer contains a separate renderer/worker.
+    internal static string WriteIcon(string folder)
+    {
+        string target=Path.Combine(folder,"NabyScape.ico");
+        using var stream=typeof(Installer).Assembly.GetManifestResourceStream("NabyScape.g.resources")??throw new IOException("Missing application resources.");
+        using var reader=new System.Resources.ResourceReader(stream);
+        foreach(System.Collections.DictionaryEntry entry in reader)
+            if(entry.Key is string key && key=="assets/island.ico" && entry.Value is Stream icon)
+            {using var output=File.Create(target);icon.Position=0;icon.CopyTo(output);return target;}
+        throw new IOException("Missing application icon.");
+    }
     internal static readonly string[] RetiredHostFiles={"NabyScape.UI.exe","NabyScape.Core.exe","NabyScape.ico","NATIVE-ThirdPartyNotices.txt","RUST-Library-COPYRIGHT.html"};
     internal static void RemoveRetiredHostFiles(string folder,string source)
     {

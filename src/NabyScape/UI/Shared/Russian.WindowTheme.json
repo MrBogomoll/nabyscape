@@ -21,5 +21,8 @@
   "Window appearance, effects and the NabyScape interface.": "Внешний вид окна, эффекты и общая стилистика NabyScape.",
   "Rounded windows use a soft solid surface.": "Для скруглённого окна используется мягкая непрозрачная поверхность.",
   "Static sample; song lyrics animate on the dock.": "Пример текста. Анимация текста песни работает на панели.",
-  "Shared dock preview": "Общий предпросмотр панели"
+  "Shared dock preview": "Общий предпросмотр панели",
+  "This fork is protected from upstream updates. Checks, downloads and automatic installation are blocked.": "Наша версия защищена от обновлений оригинала. Проверка, скачивание и автоматическая установка заблокированы.",
+  "New upstream changes are reviewed and merged into our fork manually. Install only our builds; the original setup can replace this copy if you run it manually.": "Изменения автора переносим в наш форк вручную после проверки. Устанавливайте наши сборки: оригинальный установщик при ручном запуске может заменить эту копию.",
+  "Open our fork": "Открыть наш форк"
 }
