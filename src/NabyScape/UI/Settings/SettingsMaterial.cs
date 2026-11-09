@@ -23,12 +23,12 @@ public sealed partial class SettingsWindow
         if(interactiveBounds)return;var hwnd=new WindowInteropHelper(this).Handle;if(hwnd==IntPtr.Zero)return;
         string requested=app.Settings.WindowEffects?SettingsBackdrop.Requested(app.Settings):"Solid";var conditions=SettingsBackdrop.ReadConditions() with{HighContrast=Accessibility.HighContrast};
         if(materialKey is {} key && key==(requested,conditions))return;materialKey=(requested,conditions);
-        MaterialResult=SettingsBackdrop.Resolve(requested,conditions,type=>SettingsBackdrop.Apply(hwnd,type));
+        MaterialResult=AllowsTransparency && requested is "Native Mica" or "Native Acrylic"?new(requested,"Simulated glass", "Rounded windows use a soft solid surface."):SettingsBackdrop.Resolve(requested,conditions,type=>SettingsBackdrop.Apply(hwnd,type));
         if(!MaterialResult.Native)SettingsBackdrop.Apply(hwnd,1);
         // Apply only the final frame state. Cycling through full glass for a solid
         // surface needlessly discards retained WPF client resources.
         var chrome=WindowChrome.GetWindowChrome(this);chrome.GlassFrameThickness=MaterialResult.Native?new Thickness(-1):new Thickness(0);
-        var source=HwndSource.FromHwnd(hwnd);if(source?.CompositionTarget!=null)source.CompositionTarget.BackgroundColor=MaterialResult.Native?Colors.Transparent:Color.FromRgb(17,18,20);
+        var source=HwndSource.FromHwnd(hwnd);if(source?.CompositionTarget!=null)source.CompositionTarget.BackgroundColor=Colors.Transparent;
         // Retain native blur beneath a dark client tint so secondary text stays readable.
         Background=Accessibility.HighContrast?SystemColors.WindowBrush:Brushes.Transparent;
         windowPalette["SettingsCanvas"]=SettingsPalette.Create(app.Settings,MaterialResult.Native)["SettingsCanvas"];

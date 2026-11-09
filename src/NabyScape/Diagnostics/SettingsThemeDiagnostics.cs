@@ -20,6 +20,7 @@ internal static class SettingsThemeDiagnostics
         {
             window.Show();window.OpenCategory("Appearance");await Task.Delay(180);
             var handle=new System.Windows.Interop.WindowInteropHelper(window).Handle;
+            check("Window uses genuine per-pixel transparency",window.AllowsTransparency && (GetWindowLong(handle,-20)&0x80000)!=0);
             IntPtr Hit(double x,double y){var point=window.PointToScreen(new Point(x,y));return SendMessage(handle,0x84,IntPtr.Zero,new IntPtr(((int)point.Y<<16)|((int)point.X&0xffff)));}
             check("The visible title bar is a native drag area",Hit(window.ActualWidth/2,29)==new IntPtr(2));
             check("The close button remains clickable",Hit(window.ActualWidth-24,29)==new IntPtr(1));
@@ -34,6 +35,7 @@ internal static class SettingsThemeDiagnostics
                 check(theme+" dropdown backgrounds are opaque",((SolidColorBrush)window.FindResource("PopupFill")).Color.A==255);
                 button.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0){RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent});await Task.Delay(250);
                 check(theme+" hovered text retains its original scale",button.RenderTransform.Value.IsIdentity);
+                var cornerImage=new RenderTargetBitmap((int)window.ActualWidth,(int)window.ActualHeight,96,96,PixelFormats.Pbgra32);cornerImage.Render(window);var pixel=new byte[4];bool clear=true;foreach(var corner in new[]{new Int32Rect(0,0,1,1),new Int32Rect((int)window.ActualWidth-1,0,1,1),new Int32Rect(0,(int)window.ActualHeight-1,1,1),new Int32Rect((int)window.ActualWidth-1,(int)window.ActualHeight-1,1,1)}){cornerImage.CopyPixels(corner,pixel,4,0);clear &= pixel[3]==0;}check(theme+" all four exterior corners are transparent",clear);
                 check(theme+" text palette has correct polarity",theme=="Light"?text.Color.R<40:text.Color.R>220);
                 check(theme+" visible theme captions use the selected palette",Tree(window).OfType<TextBlock>().Where(t=>t.Text==Localization.Text("Window theme") || t.Text==Localization.Text("Transparency and blur") || t.Text==Localization.Text("Window appearance")).All(t=>t.Foreground is SolidColorBrush color && color.Color==text.Color));
                 Save(window,Path.Combine(directory,"theme-"+theme+".png"));
@@ -77,5 +79,6 @@ internal static class SettingsThemeDiagnostics
         element.UpdateLayout();var bitmap=new RenderTargetBitmap((int)element.ActualWidth,(int)element.ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(element);
         var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var stream=File.Create(path);encoder.Save(stream);
     }
+    [DllImport("user32.dll",EntryPoint="GetWindowLongW")] private static extern int GetWindowLong(IntPtr hwnd,int index);
     [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hwnd,int message,IntPtr wparam,IntPtr lparam);
 }

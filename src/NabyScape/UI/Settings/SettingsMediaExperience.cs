@@ -21,12 +21,12 @@ public sealed partial class SettingsWindow
     }
     private FrameworkElement LyricsAnimationExample()
     {
-        var sample=new LyricResult(new[]{new LyricLine(0,Localization.Text("A little closer to the music")),new LyricLine(4,Localization.Text("One line, right on time")),new LyricLine(8,Localization.Text("Let the next moment arrive"))},Localization.Text("Animation preview · original sample text"));
-        var view=new LyricsView(app){Height=124,Margin=new(0,0,0,14)};view.SetFixture(sample,5.5,12);
-        var timer=new System.Windows.Threading.DispatcherTimer{Interval=TimeSpan.FromMilliseconds(100)};var clock=System.Diagnostics.Stopwatch.StartNew();
-        void Sync(){if(ElementVisibility.InViewport(view) && !app.Settings.ReduceMotion && Motion.Enabled)timer.Start();else timer.Stop();view.SetFixture(sample,5.5,12);}
-        ScrollChangedEventHandler scrolled=(_,_)=>Sync();EventHandler state=(_,_)=>Sync();
-        timer.Tick+=(_,_)=>{if(!ElementVisibility.InViewport(view)){timer.Stop();return;}view.SetFixture(sample,clock.Elapsed.TotalSeconds%12,12);};view.Loaded+=(_,_)=>{app.SettingsChanged+=Sync;settingsScroll.ScrollChanged+=scrolled;StateChanged+=state;Sync();};view.Unloaded+=(_,_)=>{app.SettingsChanged-=Sync;settingsScroll.ScrollChanged-=scrolled;StateChanged-=state;timer.Stop();};view.IsVisibleChanged+=(_,_)=>Sync();view.SizeChanged+=(_,_)=>Sync();return view;
+        var demo=new StackPanel{Margin=new(0,4,0,14)};
+        demo.Children.Add(UI.Caption("A little closer to the music",11,UI.Muted));
+        var line=UI.Caption("One line, right on time",18);line.FontWeight=FontWeights.SemiBold;line.Margin=new(0,8,0,8);demo.Children.Add(line);
+        demo.Children.Add(UI.Caption("Let the next moment arrive",12,UI.Muted));
+        var feedback=UI.Caption("Static sample; song lyrics animate on the dock.",11,UI.Muted);
+        demo.Children.Add(new LyricsSourcesControl(app,()=>app.Lyrics.Retry(),()=>feedback.Text=LyricsFiles.Import(app,this)){Margin=new(0,10,0,5)});demo.Children.Add(feedback);return demo;
     }
     private void DockEditingSettings()
     {

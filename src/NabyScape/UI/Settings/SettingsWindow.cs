@@ -80,7 +80,7 @@ public sealed partial class SettingsWindow : Window
         var saveRow=new DockPanel();undoSettings.MinHeight=24;undoSettings.Padding=new(8,3,8,3);undoSettings.FontSize=11;undoSettings.Background=Brushes.Transparent;undoSettings.Visibility=Visibility.Collapsed;undoSettings.Click+=(_,_)=>UndoSettings();DockPanel.SetDock(undoSettings,Dock.Right);saveRow.Children.Add(undoSettings);retrySave.Visibility=Visibility.Collapsed;retrySave.HorizontalAlignment=HorizontalAlignment.Right;retrySave.Click+=(_,_)=>CommitSettings();DockPanel.SetDock(retrySave,Dock.Right);saveRow.Children.Add(retrySave);
         var savedDot=new System.Windows.Shapes.Ellipse{Width=6,Height=6,Fill=SettingsTheme.Lime,Margin=new(0,0,9,0),VerticalAlignment=VerticalAlignment.Center};saveRow.Children.Add(savedDot);status.VerticalAlignment=VerticalAlignment.Center;status.Foreground=SettingsTheme.Quiet;saveRow.Children.Add(status);
         var footer=new Border{Padding=new(40,10,26,12),BorderBrush=SettingsTheme.LineSoft,BorderThickness=new(0,1,0,0),Background=Accessibility.HighContrast?SystemColors.WindowBrush:SettingsTheme.Void,Child=saveRow};
-        footer.SetResourceReference(Border.BackgroundProperty,"SettingsFooter");
+        footer.CornerRadius=new(14);footer.Margin=new(6,2,12,6);footer.BorderThickness=new(0);footer.SetResourceReference(Border.BackgroundProperty,"SettingsFooter");
         bool? previousNarrow=null;
         bool? previousShort=null;
         void Responsive()

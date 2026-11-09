@@ -76,7 +76,7 @@ internal static class SettingsPalette
         d["CheckedFill"]=d["Accent"];d["CheckedText"]=d["AccentText"];
         Add("SwitchKnob",light?"#909090":"#DDDDDD");Add("TrackFill",light?"#A2A2A2":"#777777");
         d["ProgressFill"]=d["Accent"];d["ProgressTrack"]=d["TrackFill"];
-        Add("ControlFill",light?"#70FFFFFF":"#222222");Add("ControlBorder",light?"#858585":"#777777");
+        Add("ControlFill",light?"#F1EFF2":"#757078");Add("ControlBorder",light?"#9B969E":"#A8A0AD");
         Add("SelectionFill",light?"#DDDDDD":"#555555");d["SelectionText"]=d["ControlText"];
         Add("SettingsAccentWash",light?"#E2E2E2":"#505050");Add("SettingsGlow",light?"#16000000":"#24FFFFFF");
         d["SettingsSelected"]=d["Accent"];d["SettingsSelectedText"]=d["AccentText"];

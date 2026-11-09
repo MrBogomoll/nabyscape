@@ -8,7 +8,7 @@ public sealed partial class SettingsWindow
 {
     private FrameworkElement SettingsFrame(UIElement content)
     {
-        WindowStyle=WindowStyle.None;ResizeMode=ResizeMode.CanResize;UseLayoutRounding=true;
+        WindowStyle=WindowStyle.None;AllowsTransparency=true;ResizeMode=ResizeMode.CanResize;UseLayoutRounding=true;
         WindowChrome.SetWindowChrome(this,new WindowChrome{CaptionHeight=58,ResizeBorderThickness=new(6),CornerRadius=new(28),GlassFrameThickness=new(0),UseAeroCaptionButtons=false});
         var frame=new Grid();windowShell=frame;frame.RowDefinitions.Add(new(){Height=new GridLength(58)});frame.RowDefinitions.Add(new());
         // A separate caption makes the draggable part of the window visible.

@@ -45,7 +45,7 @@ internal sealed class WelcomeWindow : Window
 
     private FrameworkElement Frame(UIElement content)
     {
-        WindowStyle=WindowStyle.None;UseLayoutRounding=true;SnapsToDevicePixels=true;
+        WindowStyle=WindowStyle.None;AllowsTransparency=true;UseLayoutRounding=true;SnapsToDevicePixels=true;
         System.Windows.Shell.WindowChrome.SetWindowChrome(this,new(){CaptionHeight=48,ResizeBorderThickness=new(6),GlassFrameThickness=new(0),UseAeroCaptionButtons=false});
         var grid=new Grid();grid.RowDefinitions.Add(new(){Height=new GridLength(48)});grid.RowDefinitions.Add(new());Grid.SetRow(content,1);grid.Children.Add(content);
         var caption=new DockPanel{Margin=new(18,0,8,0)};

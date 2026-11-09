@@ -8,6 +8,7 @@ internal static class SettingsWindowOutline
 {
     internal static void Update(Window window,double radius)
     {
+        if(window.AllowsTransparency)return;
         var handle=new WindowInteropHelper(window).Handle;if(handle==IntPtr.Zero)return;
         if(window.WindowState==WindowState.Maximized){SetWindowRgn(handle,IntPtr.Zero,true);return;}
         var dpi=VisualTreeHelper.GetDpi(window);int width=(int)Math.Ceiling(window.ActualWidth*dpi.DpiScaleX),height=(int)Math.Ceiling(window.ActualHeight*dpi.DpiScaleY);
