@@ -16,7 +16,7 @@ public sealed partial class SettingsWindow
         ["Appearance"]=new[]{"Shape","Color & material"},
         ["Motion"]=new[]{"Motion"},
         ["Layout"]=new[]{"Display","Dock placement","Move & resize","Closed island"},
-        ["Visibility"]=new[]{"Automatic tucking","Hide or show the island"},
+        ["Visibility"]=new[]{"Automatic tucking","Hide exceptions","Hide or show the island"},
         ["Controls"]=new[]{"Notch gestures","Global hotkey"},
         ["Content"]=new[]{"Enabled widgets & order","Focus sessions","Clipboard history"},
         ["Audio"]=new[]{"Closed media display","Lyrics"},

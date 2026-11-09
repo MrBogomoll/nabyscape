@@ -87,6 +87,13 @@ internal static class Native
         var name=new System.Text.StringBuilder(128);GetClassName(window,name,128);
         return name.ToString() is not ("WorkerW" or "Progman" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd");
     }
+    internal static string? WindowProcessName(IntPtr window)
+    {
+        if(window==IntPtr.Zero)return null;
+        GetWindowThreadProcessId(window,out uint id);if(id==0)return null;
+        try{using var process=System.Diagnostics.Process.GetProcessById((int)id);return process.ProcessName;}
+        catch(Exception ex) when(ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException){return null;}
+    }
     public static bool FullscreenOn(Forms.Screen screen,IntPtr own)=>IsFullscreenWindow(screen,GetForegroundWindow(),own);
     internal static bool ShouldHideOn(Forms.Screen screen,IntPtr window,bool fullscreen,bool maximized)
     {

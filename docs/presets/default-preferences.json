@@ -206,6 +206,7 @@
   "AnimationMs": 400,
   "ReduceMotion": false,
   "HideFullscreen": true,
+  "HideAppExceptions": [],
   "HideMaximized": true,
   "AlwaysTucked": false,
   "TuckEdge": 2,

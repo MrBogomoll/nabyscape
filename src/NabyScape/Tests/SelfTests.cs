@@ -70,7 +70,7 @@ internal static class SelfTests
         SettingsUxTests.Run(Test);
         InteractionHotfixTests.Run(Test);
         PersistenceTests.Run(Test);
-        ProductionFoundationTests.Run(Test);
+        ProductionFoundationTests.Run(Test);HideExceptionTests.Run(Test);
         LocalizationTests.Run(Test);
         UpdateTests.Run(Test);
         InstallationInputTests.Run(Test);

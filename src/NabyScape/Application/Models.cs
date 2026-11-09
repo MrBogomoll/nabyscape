@@ -134,7 +134,7 @@ public sealed partial class Settings
     public static List<WidgetSetting> Defaults() => Names.Keys.Where(id=>id!="tools").Select(id => new WidgetSetting { Id=id,Enabled=id is not ("stopwatch" or "voice" or "power") }).ToList();
     public void Normalize()
     {
-        NormalizeLanguageAccessibility();
+        NormalizeLanguageAccessibility();NormalizeHideExceptions();
         if(Array.IndexOf(SettingsBackdrop.Choices,SettingsMaterial)<0)SettingsMaterial="";
         if(NotificationDelivery is not ("Notch" or "Windows" or "Both" or "Off"))NotificationDelivery="Notch";
         ExternalNotificationMuted=(ExternalNotificationMuted??new()).Where(n=>!string.IsNullOrWhiteSpace(n)).Select(n=>n.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Take(100).ToList();
