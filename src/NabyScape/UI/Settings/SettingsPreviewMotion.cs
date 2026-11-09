@@ -90,36 +90,7 @@ public sealed partial class SettingsWindow
         if(key!=livePreviewKey){livePreviewKey=key;RefreshPreview();}
     }
     private void ConfigurePreviewForSetting(string name)
-    {
-        previewFocus.Text=Localization.Text(name);
-        if(name=="Show ambience on closed dock"){previewMode="Closed";previewContent="Music";}
-        else if(name.EndsWith(" tool")){previewMode="Hover";previewContent=name[..^5] switch{"File shelf"=>"Shelf","Notes"=>"Note","Clipboard"=>"Smart clipboard","Tasks"=>"Tasks","Calendar"=>"Calendar",_=>"Tools"};}
-        else if(current=="Ambience"){previewMode="Panel";previewContent="Music";}
-        else if(current=="AI"){previewMode="Panel";previewContent="AI";}
-        else if(current=="Application"){previewMode="Panel";previewContent="Startup";}
-        else if(name.Contains("Tuck",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";previewContent="Visibility";}
-        else if(name=="Swipe between open panels"){previewMode="Panel";previewContent="Panel navigation";}
-        else if(name=="Reveal shelf when dragging files"){previewMode="Hover";previewContent="Drop zone";}
-        else if(name=="Allow detachable previews"){previewMode="Hover";previewContent="Detached preview";}
-        else if(name=="Control playback from album cover"){previewMode="Hover";previewContent="Cover gestures";}
-        else if(name.Contains("media title",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";previewContent="Typography";}
-        else if(name.Contains("heading",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";previewContent="Typography";}
-        else if(name.Contains("volume indicator",StringComparison.OrdinalIgnoreCase) || name=="Volume step"){previewMode="Closed";previewContent="Volume feedback";}
-        else if(name.Contains("motion",StringComparison.OrdinalIgnoreCase) || name.Contains("activity",StringComparison.OrdinalIgnoreCase) || name=="Animation duration"){previewMode="Hover";previewContent="Music";}
-        else if(name.Contains("hover",StringComparison.OrdinalIgnoreCase) || name=="Two-stage reveal" || name=="Swipe distance"){previewMode="Hover";}
-        else if(name.Contains("Focus duration",StringComparison.OrdinalIgnoreCase) || name.Contains("Break duration",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";previewContent="Focus";}
-        else if(name.Contains("Closed media",StringComparison.OrdinalIgnoreCase) || name.Contains("Closed island",StringComparison.OrdinalIgnoreCase)){previewMode="Closed";previewContent="Music";}
-        else if(name.Contains("color",StringComparison.OrdinalIgnoreCase) || name.Contains("outline",StringComparison.OrdinalIgnoreCase) || name=="Control surfaces"){previewMode="Panel";previewContent="Control colors";}
-        else if(name.Contains("clipboard",StringComparison.OrdinalIgnoreCase) || name.Contains("history",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";previewContent="Smart clipboard";}
-        else if(name.Contains("shortcut",StringComparison.OrdinalIgnoreCase) || name=="Shortcuts"){previewMode="Panel";previewContent="Launch";}
-        else if(name.Contains("Category",StringComparison.OrdinalIgnoreCase) || name=="Text and navigation"){previewMode="Panel";previewContent="Navigation";}
-        else if(name.Contains("Launch",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";previewContent="Launch";}
-        else if(name.Contains("Panel",StringComparison.OrdinalIgnoreCase) || name.Contains("Content",StringComparison.OrdinalIgnoreCase)){previewMode="Panel";}
-        else if(name.Contains("Preview",StringComparison.OrdinalIgnoreCase)){previewMode="Hover";}
-        else if(name.Contains("width",StringComparison.OrdinalIgnoreCase) || name.Contains("height",StringComparison.OrdinalIgnoreCase) || name.Contains("position",StringComparison.OrdinalIgnoreCase) || name.Contains("offset",StringComparison.OrdinalIgnoreCase) || name is "Shape" or "Corner radius" or "Display" or "Island display"){previewMode="Closed";}
-        else if(current=="System"){previewMode="Panel";previewContent="System";}
-        else if(current=="Audio"){previewMode="Panel";previewContent="Music";}
-    }
+    { /* The shared preview changes only through its own controls. */ }
     private readonly TextBlock previewFocus=UI.Caption("Point to a setting to explore it",11,UI.Muted);
     private ActivityVisual? audioSignalWave;
     private TextBlock? audioSignalState;

@@ -19,6 +19,18 @@ internal static class SettingsThemeDiagnostics
         try
         {
             window.Show();window.OpenCategory("Appearance");await Task.Delay(180);
+            var shared=Tree(window).OfType<Expander>().Single(e=>UI.Identity(e)=="Settings live preview");
+            shared.IsExpanded=true;
+            Tree(window).OfType<Button>().First(b=>UI.Identity(b)=="Preview Panel").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var contentChoice=Tree(shared).OfType<ComboBox>().Single();contentChoice.SelectedItem="Timer";
+            window.OpenCategory("Visibility");await Task.Delay(60);
+            check("Shared preview retains mode and content across sections",shared.IsExpanded && contentChoice.SelectedItem?.ToString()=="Timer" && (string)typeof(SettingsWindow).GetField("previewMode",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)! == "Panel");
+            await Task.Delay(450);Save(window,Path.Combine(directory,"shared-preview-open.png"));
+            shared.IsExpanded=false;window.OpenCategory("Appearance");await Task.Delay(60);
+            check("Shared preview remains collapsed across sections",!shared.IsExpanded);
+            check("Obsolete material controls are absent",!Tree(window).OfType<ComboBox>().Any(c=>UI.Identity(c)=="Settings material"));
+            var search=Tree(window).OfType<TextBox>().First(t=>UI.Identity(t)=="Search settings");search.Focus();await Task.Delay(50);
+            check("Search has no nested keyboard focus outline",search.FocusVisualStyle==null && search.BorderThickness==new Thickness(0));
             var handle=new System.Windows.Interop.WindowInteropHelper(window).Handle;
             check("Window uses genuine per-pixel transparency",window.AllowsTransparency && (GetWindowLong(handle,-20)&0x80000)!=0);
             IntPtr Hit(double x,double y){var point=window.PointToScreen(new Point(x,y));return SendMessage(handle,0x84,IntPtr.Zero,new IntPtr(((int)point.Y<<16)|((int)point.X&0xffff)));}

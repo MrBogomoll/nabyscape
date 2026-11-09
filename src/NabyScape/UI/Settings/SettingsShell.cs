@@ -47,14 +47,14 @@ public sealed partial class SettingsWindow
         grid.Children.Add(screen);
         var side=new Border{BorderBrush=SettingsTheme.LineSoft,BorderThickness=new(1,0,0,0),Child=controls,Tag=StageControlsTag};Grid.SetColumn(side,1);grid.Children.Add(side);
         var frame=new Border{Background=SettingsTheme.CardRaised,BorderBrush=SettingsTheme.Line,BorderThickness=new(.8),CornerRadius=new(16),Child=grid};
-        grid.SizeChanged+=(_,_)=>grid.Clip=new RectangleGeometry(new Rect(grid.RenderSize),15,15);
+        grid.SizeChanged+=(_,e)=>grid.Clip=new RectangleGeometry(new Rect(e.NewSize),15,15);
         return frame;
     }
     private static void StageCompact(Border stage,bool narrow)
     {
         if(stage.Child is not Grid grid)return;
         var side=grid.Children.OfType<Border>().FirstOrDefault(b=>ReferenceEquals(b.Tag,StageControlsTag));if(side==null)return;
-        side.Visibility=narrow?Visibility.Collapsed:Visibility.Visible;grid.ColumnDefinitions[1].Width=narrow?new GridLength(0):new GridLength(250);
+        side.Visibility=Visibility.Visible;grid.ColumnDefinitions[1].Width=new GridLength(narrow?190:250);
     }
     private static Brush Brush(string hex)=>UI.Brush(hex);
     private static string CategoryEyebrow(string id)=>Localization.Text(id=="Home"?"Welcome":Category(id).Group).ToUpperInvariant();

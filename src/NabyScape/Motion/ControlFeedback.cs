@@ -38,7 +38,7 @@ internal static class ControlFeedback
             }
             check.Checked+=(_,_)=>Pulse();check.Unchecked+=(_,_)=>Pulse();
         }
-        else if(d is Expander expander)expander.Expanded+=(_,e)=>{if(Active && ReferenceEquals(e.OriginalSource,expander) && expander.Content is FrameworkElement content)Motion.Enter(content,3);};
+        else if(d is Expander expander)expander.Expanded+=(_,e)=>{if(GetEnabled(expander) && Active && ReferenceEquals(e.OriginalSource,expander) && expander.Content is FrameworkElement content)Motion.Enter(content,3);};
     }
     internal static void Artwork(FrameworkElement image)
     {
