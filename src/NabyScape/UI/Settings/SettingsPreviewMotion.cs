@@ -91,7 +91,6 @@ public sealed partial class SettingsWindow
     }
     private void ConfigurePreviewForSetting(string name)
     { /* The shared preview changes only through its own controls. */ }
-    private readonly TextBlock previewFocus=UI.Caption("Point to a setting to explore it",11,UI.Muted);
     private ActivityVisual? audioSignalWave;
     private TextBlock? audioSignalState;
     private void UpdateAudioSignal(double seconds)

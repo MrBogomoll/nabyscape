@@ -20,9 +20,15 @@ internal static class SettingsThemeDiagnostics
         {
             window.Show();window.OpenCategory("Appearance");await Task.Delay(180);
             var shared=Tree(window).OfType<Expander>().Single(e=>UI.Identity(e)=="Settings live preview");
-            shared.IsExpanded=true;
+            var advanced=Tree(shared).OfType<Expander>().Single(e=>UI.Identity(e)=="Preview advanced options");
+            check("Preview advanced controls start collapsed",!advanced.IsExpanded);
+            shared.IsExpanded=true;await Task.Delay(60);
+            check("Closed preview leaves room for settings",((FrameworkElement)shared.Content).ActualHeight<180);
             Tree(window).OfType<Button>().First(b=>UI.Identity(b)=="Preview Panel").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            advanced.IsExpanded=true;await Task.Delay(60);
             var contentChoice=Tree(shared).OfType<ComboBox>().Single();contentChoice.SelectedItem="Timer";
+            check("Advanced reveals content and replay",contentChoice.IsVisible && Tree(advanced).OfType<Button>().Any(b=>UI.Identity(b)=="Replay transition"));
+            advanced.IsExpanded=false;
             window.OpenCategory("Visibility");await Task.Delay(60);
             check("Shared preview retains mode and content across sections",shared.IsExpanded && contentChoice.SelectedItem?.ToString()=="Timer" && (string)typeof(SettingsWindow).GetField("previewMode",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)! == "Panel");
             await Task.Delay(450);Save(window,Path.Combine(directory,"shared-preview-open.png"));
@@ -64,6 +70,16 @@ internal static class SettingsThemeDiagnostics
                     if(primaryButtons.Length>0)check(theme+" primary buttons follow the palette in "+category,primaryButtons.All(b=>b.Background==window.FindResource("SettingsPrimaryFill") && b.Foreground==window.FindResource("SettingsPrimaryText")));
                     Save(window,Path.Combine(directory,theme+"-"+category+".png"));
                 }
+                window.OpenCategory("Appearance");shared.IsExpanded=true;contentChoice.SelectedItem="Music";
+                foreach(string mode in new[]{"Closed","Hover","Panel"})
+                {
+                    Tree(shared).OfType<Button>().First(b=>UI.Identity(b)=="Preview "+mode).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(450);
+                    check(theme+" compact "+mode+" preview fits above settings",((FrameworkElement)shared.Content).ActualHeight<260 && !contentChoice.IsVisible);
+                    Save(window,Path.Combine(directory,theme+"-compact-"+mode+".png"));
+                }
+                window.Width=600;await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-compact-narrow.png"));
+                check(theme+" narrow preview retains all mode buttons",Tree(shared).OfType<Button>().Where(b=>UI.Identity(b).StartsWith("Preview ")).All(b=>b.ActualWidth>70));
+                advanced.IsExpanded=true;await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-preview-advanced.png"));advanced.IsExpanded=false;shared.IsExpanded=false;
                 window.OpenCategory("Appearance");window.Width=600;window.Height=650;await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-narrow.png"));
                 check(theme+" narrow window retains theme choice",Tree(window).OfType<Button>().Any(b=>UI.Identity(b)=="Light theme" && b.ActualWidth>100));
                 window.Width=480;await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-480.png"));

@@ -38,7 +38,6 @@ public sealed partial class SettingsWindow
 
     private void ConfigurePreviewForSection(string title)
     {
-        previewFocus.Text=Localization.Text(title);
         (previewMode,previewContent)=title switch
         {
             "Enabled widgets & order" or "Text and navigation" =>("Panel","Navigation"),

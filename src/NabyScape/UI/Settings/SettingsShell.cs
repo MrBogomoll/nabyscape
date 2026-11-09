@@ -9,8 +9,8 @@ namespace NabyScape;
 public sealed partial class SettingsWindow
 {
     // Object tags: Settings diagnostics treat string-tagged borders as setting sections.
-    private static readonly object StageControlsTag=new(),NavIndicatorTag=new();
-    private const double SidebarWidth=252,MaxContentWidth=860,StageHeight=184;
+    private static readonly object NavIndicatorTag=new();
+    private const double SidebarWidth=252,MaxContentWidth=860,StageHeight=160;
 
     // Chrome Naby beside the stacked NABY / SCAPE wordmark used on the website.
     private FrameworkElement SidebarBrand()
@@ -32,29 +32,18 @@ public sealed partial class SettingsWindow
         
         return border;
     }
-    // The stage is a slice of your screen's top edge with the live dock hanging from it.
-    private Border StageFrame(Border previewStage,StackPanel controls)
+    private Border StageFrame(Border previewStage,StackPanel controls,Expander advanced)
     {
-        var grid=new Grid();grid.ColumnDefinitions.Add(new());grid.ColumnDefinitions.Add(new(){Width=new GridLength(250)});
-        var screen=new Grid{ClipToBounds=true};
-        var glow=new RadialGradientBrush{Center=new(.5,0),GradientOrigin=new(.5,0),RadiusX=.55,RadiusY=.9};
-        glow.GradientStops.Add(new(Color.FromArgb(0x30,0xFF,0xFF,0xFF),0));glow.GradientStops.Add(new(Color.FromArgb(0x0C,0xFF,0xFF,0xFF),.45));glow.GradientStops.Add(new(Colors.Transparent,1));glow.Freeze();
-        screen.Background=glow;
-        var bezel=new LinearGradientBrush{StartPoint=new(0,0),EndPoint=new(1,0)};
-        bezel.GradientStops.Add(new(Color.FromRgb(0x10,0x14,0x11),0));bezel.GradientStops.Add(new(Color.FromRgb(0x9A,0xA3,0x94),.5));bezel.GradientStops.Add(new(Color.FromRgb(0x10,0x14,0x11),1));bezel.Freeze();
-        screen.Children.Add(new Border{Height=2,VerticalAlignment=VerticalAlignment.Top,Background=bezel,IsHitTestVisible=false});
-        previewStage.VerticalAlignment=VerticalAlignment.Top;screen.Children.Add(previewStage);
-        grid.Children.Add(screen);
-        var side=new Border{BorderBrush=SettingsTheme.LineSoft,BorderThickness=new(1,0,0,0),Child=controls,Tag=StageControlsTag};Grid.SetColumn(side,1);grid.Children.Add(side);
-        var frame=new Border{Background=SettingsTheme.CardRaised,BorderBrush=SettingsTheme.Line,BorderThickness=new(.8),CornerRadius=new(16),Child=grid};
-        grid.SizeChanged+=(_,e)=>grid.Clip=new RectangleGeometry(new Rect(e.NewSize),15,15);
+        var column=new StackPanel();column.Children.Add(controls);column.Children.Add(previewStage);column.Children.Add(advanced);
+        var frame=new Border{Background=SettingsTheme.CardRaised,BorderBrush=SettingsTheme.Line,BorderThickness=new(.8),CornerRadius=new(16),Child=column};
+        column.SizeChanged+=(_,e)=>column.Clip=new RectangleGeometry(new Rect(e.NewSize),15,15);
         return frame;
     }
-    private static void StageCompact(Border stage,bool narrow)
+    private void UpdatePreviewStageHeight()
     {
-        if(stage.Child is not Grid grid)return;
-        var side=grid.Children.OfType<Border>().FirstOrDefault(b=>ReferenceEquals(b.Tag,StageControlsTag));if(side==null)return;
-        side.Visibility=Visibility.Visible;grid.ColumnDefinitions[1].Width=new GridLength(narrow?190:250);
+        if(previewStage==null)return;
+        double desired=previewMode=="Closed"?Math.Clamp(app.Settings.Height+22,54,94):previewMode=="Hover"?124:StageHeight;
+        previewStage.Height=Math.Min(desired,Math.Clamp(ActualHeight*.24,70,StageHeight));
     }
     private static Brush Brush(string hex)=>UI.Brush(hex);
     private static string CategoryEyebrow(string id)=>Localization.Text(id=="Home"?"Welcome":Category(id).Group).ToUpperInvariant();
