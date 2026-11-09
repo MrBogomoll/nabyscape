@@ -9,7 +9,7 @@ namespace NabyScape;
 // Static, local examples of the controls in this section. Repaint values without rebuilding editors.
 internal sealed class SettingsScene : FrameworkElement
 {
-    internal static readonly string[] Sections={"Hide exceptions","Other apps","Feature usage","Your setup","Ambient light","Notification presentation","Visualizer","Lyrics","Move & resize","Completion sound","AI companion","Shape","Settings material","Color & material","Surface","Controls & outlines","Typography","Text and navigation","Motion","Animation performance","Dock placement","Display","Closed island","Open panel","Hover preview","Hover & swipe","Enabled widgets & order","Individual tools","Hover pages","Clipboard history","Focus sessions","Stopwatch","Automatic tucking","Manual tuck shortcut","Panel navigation","Drag to Island","Detachable previews","Closed cover gestures","Automatic activity","Notch gestures","Global hotkey","Hide or show the island","Closed media display","Waveform source","Live signal","Live feedback","Volume mixer","Audio behavior","Header wheel","Clock","Monitor details","Launch display","Shortcuts","Layout profile","Notifications","Downloads","Updates","Reset preferences","Behavior","Local storage","Language & accessibility","Private diagnostics","About NabyScape"};
+    internal static readonly string[] Sections={"Window theme","Hide exceptions","Other apps","Feature usage","Your setup","Ambient light","Notification presentation","Visualizer","Lyrics","Move & resize","Completion sound","AI companion","Shape","Settings material","Color & material","Surface","Controls & outlines","Typography","Text and navigation","Motion","Animation performance","Dock placement","Display","Closed island","Open panel","Hover preview","Hover & swipe","Enabled widgets & order","Individual tools","Hover pages","Clipboard history","Focus sessions","Stopwatch","Automatic tucking","Manual tuck shortcut","Panel navigation","Drag to Island","Detachable previews","Closed cover gestures","Automatic activity","Notch gestures","Global hotkey","Hide or show the island","Closed media display","Waveform source","Live signal","Live feedback","Volume mixer","Audio behavior","Header wheel","Clock","Monitor details","Launch display","Shortcuts","Layout profile","Notifications","Downloads","Updates","Reset preferences","Behavior","Local storage","Language & accessibility","Private diagnostics","About NabyScape"};
     private readonly string kind;
     internal string Section=>kind;
     private readonly Settings s;
@@ -69,6 +69,8 @@ internal sealed class SettingsScene : FrameworkElement
         Box(0,0,420,kind=="Enabled widgets & order"?Math.Max(124,widgetBottom+42):124,UI.Brush("#191C21"),10);
         switch(kind)
         {
+            case "Window theme":
+                Caption("Light theme",24,24,16,true);Caption("Dark theme",228,24,16,true);Box(24,54,168,42,UI.Brush("#EEEEEE"));Box(228,54,168,42,UI.Brush("#333333"));break;
             case "Feature usage":
                 Caption("Choose what runs",24,18,18,true);Text(Localization.Format("{0} enabled widgets",s.Widgets.Count(w=>w.Enabled)),24,51,12);Note("Essentials or Custom · background switches stay explicit");break;
             case "Your setup":

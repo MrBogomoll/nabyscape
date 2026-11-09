@@ -13,7 +13,7 @@ public sealed partial class SettingsWindow
 {
     private static readonly Dictionary<string,string[]> EssentialSections=new()
     {
-        ["Appearance"]=new[]{"Shape","Color & material"},
+        ["Appearance"]=new[]{"Window theme","Window appearance","Shape","Color & material"},
         ["Motion"]=new[]{"Motion"},
         ["Layout"]=new[]{"Display","Dock placement","Move & resize","Closed island"},
         ["Visibility"]=new[]{"Automatic tucking","Hide exceptions","Hide or show the island"},
@@ -43,9 +43,9 @@ public sealed partial class SettingsWindow
             {
                 lastGroup=category.Group;
                 // "Start here" stands alone at the top; a "Settings" label above it repeats the window title.
-                if(category.Group!="Settings"){var label=UI.Caption(category.Group,10,UI.Muted);label.Margin=new(14,10,0,4);label.FontFamily=SettingsTheme.Display;label.FontWeight=FontWeights.Bold;label.Text=label.Text.ToUpperInvariant();label.Foreground=SettingsTheme.Quiet;label.Opacity=.75;navigation.Children.Add(label);navigationGroups[category.Group]=label;}
+                if(category.Group!="Settings"){var label=UI.Caption(category.Group,10,UI.Muted);label.Margin=new(14,10,0,4);label.FontFamily=SettingsTheme.Display;label.FontWeight=FontWeights.Bold;label.Text=label.Text.ToUpperInvariant();label.Foreground=SettingsTheme.Quiet;label.Opacity=.75;label.Visibility=Visibility.Collapsed;navigation.Children.Add(label);navigationGroups[category.Group]=label;}
             }
-            var item=category;var button=UI.CaptionButton(item.Title,()=>Navigate(item.Id));button.HorizontalContentAlignment=HorizontalAlignment.Left;button.Content=NavigationContent(CategoryIcon(item.Id),Localization.Text(item.Title));button.Padding=new(12,6,12,6);button.Margin=new(0,1,0,1);button.Tag=new CornerRadius(9);button.FontSize=13;button.MinHeight=32;button.ToolTip=Localization.Text(item.Description);navigationButtons[item.Id]=button;navigation.Children.Add(button);
+            var item=category;var button=UI.CaptionButton(item.Title,()=>Navigate(item.Id));button.HorizontalContentAlignment=HorizontalAlignment.Left;button.Content=NavigationContent(CategoryIcon(item.Id),Localization.Text(item.Title));button.Padding=new(16,11,16,11);button.Margin=new(0,3,0,3);button.Tag=new CornerRadius(24);button.FontSize=13;button.MinHeight=app.Settings.WindowCompact?34:46;button.ToolTip=Localization.Text(item.Description);navigationButtons[item.Id]=button;navigation.Children.Add(button);
         }
         var label2=new StackPanel();label2.Children.Add(UI.Caption("Show all settings",12));var hint=UI.Caption("Every option and its help text",10,UI.Muted);hint.Margin=new(0,3,0,0);label2.Children.Add(hint);
         // Lives in the sidebar footer (see SidebarFooter).
@@ -57,7 +57,7 @@ public sealed partial class SettingsWindow
     {
         bool all=app.Settings.SettingsShowAll;
         foreach(var category in SettingsCategories)if(navigationButtons.TryGetValue(category.Id,out var button))button.Visibility=all || !DetailedCategories.Contains(category.Id)?Visibility.Visible:Visibility.Collapsed;
-        foreach(var group in navigationGroups)group.Value.Visibility=SettingsCategories.Any(c=>c.Group==group.Key && navigationButtons.TryGetValue(c.Id,out var b) && b.Visibility==Visibility.Visible)?Visibility.Visible:Visibility.Collapsed;
+        foreach(var group in navigationGroups)group.Value.Visibility=Visibility.Collapsed;
         if(showAllSwitch!=null && showAllSwitch.IsChecked!=all)showAllSwitch.IsChecked=all;
         if(categorySelector!=null)
         {
@@ -106,7 +106,7 @@ public sealed partial class SettingsWindow
     {
         foreach(var text in SettingTree(section).OfType<TextBlock>().ToArray())
         {
-            if(!ReferenceEquals(text.Foreground,UI.Muted) || text.Text.Length==0)continue;
+            if(!UI.IsMuted(text) || text.Text.Length==0)continue;
             bool inSwitch=false,inControl=false;
             for(var node=LogicalTreeHelper.GetParent(text);node!=null && node!=section;node=LogicalTreeHelper.GetParent(node))
             {

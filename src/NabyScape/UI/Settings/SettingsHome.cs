@@ -45,10 +45,9 @@ public sealed partial class SettingsWindow
         var actions=UI.Row(setup,search);actions.Margin=new(0,18,0,0);text.Children.Add(actions);
         grid.Children.Add(text);
         var art=new Grid{Width=150,Height=150,Margin=new(12,0,0,0),VerticalAlignment=VerticalAlignment.Center};
-        var halo=new RadialGradientBrush();halo.GradientStops.Add(new(Color.FromArgb(0x55,0xC7,0xFF,0x91),0));halo.GradientStops.Add(new(Color.FromArgb(0x10,0xC7,0xFF,0x91),.55));halo.GradientStops.Add(new(Colors.Transparent,1));halo.Freeze();
+        var halo=new RadialGradientBrush();halo.GradientStops.Add(new(Color.FromArgb(0x35,0xFF,0xFF,0xFF),0));halo.GradientStops.Add(new(Color.FromArgb(0x10,0xFF,0xFF,0xFF),.55));halo.GradientStops.Add(new(Colors.Transparent,1));halo.Freeze();
         art.Children.Add(new System.Windows.Shapes.Ellipse{Fill=halo,Margin=new(-24)});
-        var naby=new Image{Width=128,Height=128};try{naby.Source=new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Assets/naby-chrome.png"));}catch(Exception ex){app.Store.Log(ex);}
-        RenderOptions.SetBitmapScalingMode(naby,BitmapScalingMode.HighQuality);art.Children.Add(naby);Grid.SetColumn(art,1);grid.Children.Add(art);
+        var naby=new System.Windows.Shapes.Path{Data=Geometry.Parse("M 0,17 C 2,4 10,1 18,7 C 25,13 31,12 38,6 C 36,19 28,23 20,17 C 13,11 6,11 0,17 Z"),Fill=SettingsTheme.Bone,Width=100,Height=70,Stretch=Stretch.Uniform};art.Children.Add(naby);Grid.SetColumn(art,1);grid.Children.Add(art);
         var card=new Border{Background=SettingsTheme.Card,BorderBrush=SettingsTheme.Line,BorderThickness=new(1),CornerRadius=new(18),Padding=new(30,26,26,26),Margin=new(0,0,0,26),Child=grid,ClipToBounds=true};
         grid.SizeChanged+=(_,_)=>art.Visibility=grid.ActualWidth<520?Visibility.Collapsed:Visibility.Visible;
         UI.LocalizedName(card,"Welcome");return card;

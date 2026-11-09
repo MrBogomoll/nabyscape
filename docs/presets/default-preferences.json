@@ -344,5 +344,11 @@
   "DownloadsFolder": "",
   "CountdownSoundFile": "",
   "RecentColors": [],
-  "NotificationsSnoozedUntil": null
+  "NotificationsSnoozedUntil": null,
+  "WindowTheme": "Light",
+  "WindowGlass": 70,
+  "WindowLargeCorners": true,
+  "WindowEffects": true,
+  "WindowCompact": false,
+  "WindowHoverAccents": true
 }

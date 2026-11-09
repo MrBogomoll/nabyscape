@@ -65,7 +65,7 @@ public sealed partial class SettingsWindow
     }
     private FrameworkElement VisibilityExample()
     {
-        var panel=new StackPanel();var scene=new Grid{Height=108,ClipToBounds=true,Background=UI.Brush("#24272D"),Margin=new(0,0,0,12)};
+        var panel=new StackPanel();var scene=new Grid{Height=108,ClipToBounds=true,Background=UI.Brush("#24272D"),Margin=new(0,0,0,12)};scene.SetValue(SettingsPalette.PreserveProperty,true);
         var window=new Border{Margin=new(9,17,9,8),CornerRadius=new(5),Background=UI.Brush("#17191D"),Child=UI.Caption("Your maximized app",11,UI.Muted)};((TextBlock)window.Child).HorizontalAlignment=HorizontalAlignment.Center;scene.Children.Add(window);
         bool tuck=app.Settings.AlwaysTucked || app.Settings.HideFullscreen || app.Settings.HideMaximized;double offset=23-app.Settings.TuckEdge;
         var slide=new TranslateTransform(0,tuck?-offset:0);var island=new Border{Width=110,Height=23,CornerRadius=new(0,0,9,9),VerticalAlignment=VerticalAlignment.Top,HorizontalAlignment=HorizontalAlignment.Center,Background=Brushes.Black,RenderTransform=slide};

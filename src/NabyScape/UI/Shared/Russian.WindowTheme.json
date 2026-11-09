@@ -1,0 +1,22 @@
+{
+  "Window appearance": "Оформление",
+  "Window theme": "Тема окна",
+  "Choose the appearance of the app interface.": "Выберите оформление интерфейса приложения.",
+  "Light theme": "Светлая",
+  "Dark theme": "Тёмная",
+  "Transparency and blur": "Прозрачность и размытие",
+  "Softness and depth of the window surface.": "Мягкость и глубина поверхности окна.",
+  "Window corners": "Скругление углов",
+  "Corner radius of the window and interface elements.": "Радиус скругления окна и элементов интерфейса.",
+  "Interface effects": "Эффекты интерфейса",
+  "Soft depth and glass-like surfaces.": "Мягкие тени, глубина и стеклянный эффект.",
+  "Compact mode": "Компактный режим",
+  "Smaller navigation rows and tighter spacing.": "Уменьшенная высота элементов и плотные отступы.",
+  "Show hover accents": "Показывать акценты при наведении",
+  "Subtle highlights on buttons and menu items.": "Лёгкое выделение кнопок и пунктов при наведении.",
+  "NabyScape Settings": "Настройки NabyScape",
+  "Not selected": "Не выбрано",
+  "Large corners": "Большое",
+  "Small corners": "Малое",
+  "Window appearance, effects and the NabyScape interface.": "Внешний вид окна, эффекты и общая стилистика NabyScape."
+}

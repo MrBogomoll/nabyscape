@@ -112,7 +112,7 @@ internal sealed class WeatherView : UserControl
         content.Children.Clear();bool day=data?.Day??true;int code=data?.Code??0;
         if(data==null)
         {var hint=UI.Text(Localization.Text("Your daily outlook starts with a city. Search above to get started."),11,UI.Muted);hint.Margin=new(0,8,0,8);content.Children.Add(hint);ContentSizeChanged?.Invoke();return;}
-        var scene=new Grid();scene.Children.Add(new WeatherSky{Day=day,Code=code});var panel=new StackPanel{Margin=new(14,8,12,8)};
+        var scene=new Grid();scene.SetValue(SettingsPalette.PreserveProperty,true);scene.Resources=SettingsTheme.PreviewResources();scene.Children.Add(new WeatherSky{Day=day,Code=code});var panel=new StackPanel{Margin=new(14,8,12,8)};
         var hero=new Grid();hero.ColumnDefinitions.Add(new());hero.ColumnDefinitions.Add(new(){Width=new GridLength(108)});
         var readings=new StackPanel();var today=UI.Text(day?Localization.Text("TODAY · DAYLIGHT"):Localization.Text("TONIGHT"),9,UI.Brush("#B6C7D9"));readings.Children.Add(today);
         var temperature=UI.Text($"{data.Temperature:0}°",38);temperature.FontWeight=FontWeights.Light;temperature.TextWrapping=TextWrapping.NoWrap;readings.Children.Add(temperature);
@@ -122,7 +122,7 @@ internal sealed class WeatherView : UserControl
         void Metric(string label,string value){var p=new StackPanel{Orientation=Orientation.Horizontal};p.Children.Add(UI.Text(label+" ",9,UI.Brush("#97ADC2")));p.Children.Add(UI.Text(value,10,UI.Brush("#DFE8EF")));metrics.Children.Add(p);}
         Metric(Localization.Text("Rain"),$"{data.RainChance:0}%");Metric(Localization.Text("Humidity"),$"{data.Humidity:0}%");Metric(Localization.Text("Wind"),Localization.Format("{0:0} km/h",data.Wind));panel.Children.Add(metrics);scene.Children.Add(panel);
         content.Children.Add(new Border{CornerRadius=new(16),BorderBrush=UI.Brush(day?"#3C5268":"#354364"),BorderThickness=new(.7),Child=scene});
-        var forecast=new Grid{Margin=new(10,5,10,4)};forecast.RowDefinitions.Add(new());forecast.RowDefinitions.Add(new(){Height=new GridLength(10)});var hourly=new System.Windows.Controls.Primitives.UniformGrid{Columns=Math.Max(1,data.Hours.Count),Rows=1};
+        var forecast=new Grid{Margin=new(10,5,10,4)};forecast.SetValue(SettingsPalette.PreserveProperty,true);forecast.Resources=SettingsTheme.PreviewResources();forecast.RowDefinitions.Add(new());forecast.RowDefinitions.Add(new(){Height=new GridLength(10)});var hourly=new System.Windows.Controls.Primitives.UniformGrid{Columns=Math.Max(1,data.Hours.Count),Rows=1};
         foreach(var hour in data.Hours)
         {
             var column=new StackPanel{HorizontalAlignment=HorizontalAlignment.Center};column.Children.Add(UI.Text(hour.Time,9,UI.Muted));column.Children.Add(new WeatherArtwork{Code=hour.Code,Day=hour.Day,Width=22,Height=18,Margin=new(0,3,0,1),ReduceMotion=true,DecorativeMotion=false});var value=UI.Text($"{hour.Temperature:0}°",11);value.HorizontalAlignment=HorizontalAlignment.Center;column.Children.Add(value);column.ToolTip=Localization.Format("{0} · {1:0}% rain",WeatherService.Condition(hour.Code),hour.RainChance);hourly.Children.Add(column);

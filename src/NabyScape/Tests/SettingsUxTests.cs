@@ -9,6 +9,29 @@ internal static class SettingsUxTests
     internal static void Run(Action<string,Action> test)
     {
         void Assert(bool value){if(!value)throw new Exception("Settings UX invariant failed");}
+        test("Window themes persist and import without changing the island appearance",()=>
+        {
+            var settings=new Settings{WindowTheme="Dark",WindowGlass=42,WindowCompact=true,WindowEffects=false,WindowLargeCorners=false,WindowHoverAccents=false,Background="#123456",Accent="#ABCDEF"};
+            var restored=System.Text.Json.JsonSerializer.Deserialize<Settings>(System.Text.Json.JsonSerializer.Serialize(settings))!;restored.Normalize();
+            Assert(restored.WindowTheme=="Dark" && restored.WindowGlass==42 && restored.WindowCompact && !restored.WindowEffects && !restored.WindowLargeCorners && !restored.WindowHoverAccents);
+            Assert(restored.Background=="#123456" && restored.Accent=="#ABCDEF");
+            var imported=new Settings();CustomizationProfile.Import(CustomizationProfile.Export(settings),imported);
+            Assert(imported.WindowTheme=="Dark" && imported.WindowGlass==42 && imported.WindowCompact);
+            imported.WindowTheme="invalid";imported.WindowGlass=double.NaN;imported.Normalize();Assert(imported.WindowTheme=="Light" && imported.WindowGlass==70);
+        });
+        test("Both window palettes provide readable text and neutral accents",()=>
+        {
+            foreach(string theme in new[]{"Light","Dark"})
+            {
+                var palette=SettingsPalette.Create(new Settings{WindowTheme=theme});
+                var text=((SolidColorBrush)palette["ControlText"]).Color;var canvas=((SolidColorBrush)palette["SettingsVoid"]).Color;
+                Assert(SettingsThemeDiagnostics.Contrast(text,canvas)>=7);
+                var accent=((SolidColorBrush)palette["Accent"]).Color;Assert(accent.R==accent.G && accent.G==accent.B);
+                var native=(LinearGradientBrush)SettingsPalette.Create(new Settings{WindowTheme=theme},true)["SettingsCanvas"];
+                Assert(native.GradientStops.All(stop=>stop.Color.A<255));
+            }
+            Assert(!ReferenceEquals(SettingsTheme.Card,UI.Brush("#252525")));
+        });
         test("Settings save feedback names changed preferences without exposing personal content",()=>
         {
             var settings=new Settings();var before=System.Text.Json.JsonSerializer.SerializeToElement(settings);

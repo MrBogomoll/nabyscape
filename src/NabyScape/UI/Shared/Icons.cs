@@ -93,6 +93,9 @@ internal static class Icons
     }
     public static Button Button(string icon,string name,System.Action action,bool primary=false,double size=42)
     {
-        var button=UI.CaptionButton(name,action,primary);button.Content=Create(icon,20,primary?Brushes.Black:Brushes.White);button.Width=size;button.Height=size;button.MinHeight=size;button.Tag=new CornerRadius(size/2);button.Padding=new(System.Math.Max(4,(size-20)/2));button.ToolTip=Localization.Text(name);return button;
+        var button=UI.CaptionButton(name,action,primary);var glyph=Create(icon,20,primary?Brushes.Black:Brushes.White);button.Content=glyph;
+        void Follow(Shape shape)=>System.Windows.Data.BindingOperations.SetBinding(shape,shape.Stroke!=null?Shape.StrokeProperty:Shape.FillProperty,new System.Windows.Data.Binding("Foreground"){Source=button});
+        if(glyph is Shape shape)Follow(shape);else if(glyph is Viewbox {Child:Canvas canvas})foreach(var child in canvas.Children)if(child is Shape part)Follow(part);
+        button.Width=size;button.Height=size;button.MinHeight=size;button.Tag=new CornerRadius(size/2);button.Padding=new(System.Math.Max(4,(size-20)/2));button.ToolTip=Localization.Text(name);return button;
     }
 }

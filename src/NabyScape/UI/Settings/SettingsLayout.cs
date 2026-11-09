@@ -53,7 +53,7 @@ public sealed partial class SettingsWindow
         var row=new Grid();row.ColumnDefinitions.Add(new(){Width=GridLength.Auto});row.ColumnDefinitions.Add(new(){Width=GridLength.Auto});row.ColumnDefinitions.Add(new());
         // A lime rail marks the open page.
         row.Children.Add(new Border{Tag=NavIndicatorTag,Width=3,Height=16,CornerRadius=new(1.5),Background=SettingsTheme.Lime,Margin=new(-8,0,9,0),VerticalAlignment=VerticalAlignment.Center,Visibility=Visibility.Hidden});
-        var glyph=Icons.Create(icon,16);glyph.Margin=new(0,0,11,0);glyph.VerticalAlignment=VerticalAlignment.Center;Grid.SetColumn(glyph,1);
+        var glyph=Icons.Create(icon,21);glyph.Margin=new(0,0,11,0);glyph.VerticalAlignment=VerticalAlignment.Center;Grid.SetColumn(glyph,1);
         var shapes=glyph is Viewbox {Child:Canvas canvas}?canvas.Children.OfType<Shape>():glyph is Shape single?new[]{single}:Enumerable.Empty<Shape>();
         foreach(var shape in shapes)
             BindingOperations.SetBinding(shape,shape.Stroke!=null?Shape.StrokeProperty:Shape.FillProperty,new Binding("Foreground"){RelativeSource=new RelativeSource(RelativeSourceMode.FindAncestor,typeof(Button),1)});
@@ -93,7 +93,7 @@ public sealed partial class SettingsWindow
             if(box.Parent is not StackPanel {Orientation:Orientation.Vertical} parent || !double.IsNaN(box.Width))continue;
             int at=parent.Children.IndexOf(box);if(at<0)continue;
             FrameworkElement? label=null;
-            if(at>0 && parent.Children[at-1] is TextBlock caption && ReferenceEquals(caption.Foreground,UI.Muted) && caption.Text.Length is >0 and <=40 && (caption.Tag is null || UI.IsHeading(caption)))
+            if(at>0 && parent.Children[at-1] is TextBlock caption && UI.IsMuted(caption) && caption.Text.Length is >0 and <=40 && (caption.Tag is null || UI.IsHeading(caption)))
             {label=caption;parent.Children.RemoveAt(at-1);at--;}
             label??=UI.Text(Localization.Text(UI.Identity(box)),12);
             if(label is TextBlock text){text.FontSize=12;text.Foreground=UI.Brush("#F2F3F5");}

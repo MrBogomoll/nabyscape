@@ -293,6 +293,12 @@
         "Id": "weather",
         "Enabled": true
       }
-    ]
+    ],
+    "WindowTheme": "Light",
+    "WindowGlass": 70,
+    "WindowLargeCorners": true,
+    "WindowEffects": true,
+    "WindowCompact": false,
+    "WindowHoverAccents": true
   }
 }
