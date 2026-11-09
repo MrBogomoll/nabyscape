@@ -8,7 +8,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 if ($SkipTests -and $RunDiagnostics) { throw 'CompileOnly/SkipTests cannot be combined with RunDiagnostics.' }
-$hostArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
+$hostArchitecture = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+    'arm64'
+} elseif ([Environment]::Is64BitOperatingSystem) {
+    'x64'
+} else {
+    'x86'
+}
 $canExecute = $Runtime -eq "win-$hostArchitecture"
 if ($RunDiagnostics -and !$canExecute) { throw 'Diagnostics require a host matching the target architecture.' }
 if (!$SkipTests) { & (Join-Path $PSScriptRoot 'tools\Test-SettingsScenes.ps1') }
