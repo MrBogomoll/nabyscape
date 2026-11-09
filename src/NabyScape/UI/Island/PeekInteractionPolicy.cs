@@ -2,21 +2,20 @@ using System;
 using System.Windows;
 namespace NabyScape;
 
-// Each wheel gesture advances one page; a pause begins the next gesture.
+// Preserve every standard wheel notch, including coalesced and high-resolution input.
 internal sealed class PeekWheelAccumulator
 {
-    private double total;
+    private long total;
     private long last;
-    private bool gated;
     internal int Push(int delta,long now)
     {
-        if(now-last>=300){total=0;gated=false;}
-        last=now;if(gated || delta==0)return 0;
-        if(total!=0 && Math.Sign(total)!=Math.Sign(delta))total=0;
-        total+=delta;if(Math.Abs(total)<100)return 0;
-        gated=true;return Math.Sign(total);
+        if(delta==0)return 0;
+        if(now-last>=300 || total!=0 && Math.Sign(total)!=Math.Sign(delta))total=0;
+        last=now;total+=delta;
+        int steps=(int)(total/120);total-=steps*120L;
+        return steps;
     }
-    internal void Reset(){total=0;last=0;gated=false;}
+    internal void Reset(){total=0;last=0;}
 }
 internal static class VisibilityPolicy
 {
@@ -42,10 +41,14 @@ internal static class PeekInteractionTests
     internal static void Run(Action<string,bool> test)
     {
         var wheel=new PeekWheelAccumulator();
-        test("Small wheel deltas accumulate",wheel.Push(30,1000)==0 && wheel.Push(30,1010)==0 && wheel.Push(40,1020)==1);
-        test("A continuous wheel gesture advances once",wheel.Push(120,1040)==0 && wheel.Push(120,1100)==0);
-        test("A new wheel gesture can reverse",wheel.Push(-120,1400)==-1);
-        wheel.Reset();test("Direction changes discard stale deltas",wheel.Push(60,2000)==0 && wheel.Push(-60,2010)==0 && wheel.Push(-40,2020)==-1);
+        test("Small wheel deltas accumulate into one standard notch",wheel.Push(30,1000)==0 && wheel.Push(30,1010)==0 && wheel.Push(60,1020)==1);
+        wheel.Reset();int steps=0;for(int i=0;i<5;i++)steps+=wheel.Push(120,1100+i*10);
+        test("Five rapid wheel notches advance five tabs",steps==5);
+        wheel.Reset();test("A coalesced wheel event retains all five notches",wheel.Push(600,1300)==5);
+        test("A rapid reversal responds immediately",wheel.Push(-120,1310)==-1);
+        wheel.Reset();test("Fractional wheel remainder is retained",wheel.Push(150,1500)==1 && wheel.Push(90,1510)==1);
+        wheel.Reset();test("Direction changes discard stale fractional deltas",wheel.Push(60,2000)==0 && wheel.Push(-60,2010)==0 && wheel.Push(-60,2020)==-1);
+        wheel.Reset();test("A pause clears an unfinished wheel notch",wheel.Push(60,3000)==0 && wheel.Push(60,3400)==0 && wheel.Push(60,3410)==1);
         var appA=new IntPtr(101);var appB=new IntPtr(202);
         test("Tray show uses the last eligible external foreground",VisibilityPolicy.LatestExternalForeground(IntPtr.Zero,appA,true)==appA);
         test("External foreground tracking replaces the previous app",VisibilityPolicy.LatestExternalForeground(appB,appA,true)==appB);

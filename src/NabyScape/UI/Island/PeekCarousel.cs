@@ -141,7 +141,7 @@ public sealed partial class OverlayWindow
     internal void SelectPeek(string id)
     {if(noticeShowing || !peeking || assistantPeeking || !PeekPages().Contains(id))return;PromotePeek();var ids=PeekPages();int old=Array.IndexOf(ids,peekId),next=Array.IndexOf(ids,id);double start=(next-old)*PeekWidth;if(Math.Abs(next-old)>1){peekId=id;LayoutPeek(0,false);peekViews[id].Opacity=.65;Motion.Fade(peekViews[id],1,160);UpdatePeekDeck();return;}if(next==old){LayoutPeek(0,true);return;}peekId=id;LayoutPeek(start,false);UpdatePeekDeck();LayoutPeek(0,true);WakeLiveRendering();}
     internal void NavigatePeek(int direction)
-    {var ids=PeekPages();int index=Array.IndexOf(ids,peekId);if(ids.Length>0)SelectPeek(ids[Math.Clamp(index+Math.Sign(direction),0,ids.Length-1)]);}
+    {var ids=PeekPages();int index=Array.IndexOf(ids,peekId);if(ids.Length>0)SelectPeek(ids[Math.Clamp(index+direction,0,ids.Length-1)]);}
     private void LayoutPeek(double offset,bool animate)
     {
         var ids=PeekPages();int index=Array.IndexOf(ids,peekId);

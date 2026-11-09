@@ -61,14 +61,14 @@ public sealed partial class OverlayWindow
             if(peeking){if(RoutePeekWheel(e.Delta,false,e.OriginalSource as DependencyObject))e.Handled=true;return;}
             if(expanded){if(RoutePanelWheel(e.Delta,Keyboard.Modifiers.HasFlag(ModifierKeys.Shift),e.OriginalSource as DependencyObject))e.Handled=true;return;}
             if(app.Settings.WheelAction=="volume"){app.Audio.SetVolume(app.Audio.Volume+Math.Sign(e.Delta)*app.Settings.VolumeStep/100d);app.Audio.Read();Update();e.Handled=true;}
-            else if(app.Settings.WheelAction=="pages"){Reveal();CyclePage(Math.Sign(e.Delta));e.Handled=true;}
+            else if(app.Settings.WheelAction=="pages"){Reveal();int steps=panelWheel.Push(e.Delta,Environment.TickCount64);if(steps!=0)CyclePage(steps);e.Handled=true;}
         };
         root.PreviewMouseDown+=(_,e)=>{if(e.ChangedButton!=MouseButton.Middle || (expanded && e.GetPosition(this).Y>app.Settings.Height))return;if(app.Settings.MiddleAction=="toggle")_=app.Media.Command("toggle");else if(app.Settings.MiddleAction=="microphone" && !app.Audio.ToggleMicrophoneMute())app.Notify(Localization.Text("Could not change microphone"),app.Audio.LastError??Localization.Text("Device unavailable."));e.Handled=app.Settings.MiddleAction!="none";};
         PreviewKeyDown+=(_,e)=>{if(e.Key==Key.Tab && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)){if(commandOpen)CloseCommands();CyclePage(Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)?-1:1);e.Handled=true;}};
 
     }
     private void CyclePage(int direction)
-    {var keys=compactTabs.Keys.ToArray();if(keys.Length==0)return;int i=Array.IndexOf(keys,activePage);SelectPage(keys[(i+direction+keys.Length)%keys.Length]);}
+    {var keys=compactTabs.Keys.ToArray();if(keys.Length==0)return;int i=Array.IndexOf(keys,activePage);SelectPage(keys[((i+direction%keys.Length)%keys.Length+keys.Length)%keys.Length]);}
     internal Func<IntPtr,int,uint,uint,bool>? DiagnosticHotkeyRegistration {get;set;}
     private bool RegisterConfiguredHotkey(IntPtr window,int id,uint modifiers,uint key)
         =>DiagnosticRun && DiagnosticHotkeyRegistration is {} registration?registration(window,id,modifiers,key):RegisterHotKey(window,id,modifiers,key);
