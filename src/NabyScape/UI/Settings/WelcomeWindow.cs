@@ -29,8 +29,10 @@ internal sealed class WelcomeWindow : Window
         Title=Localization.Text("Welcome to NabyScape");Width=580;Height=620;MinWidth=420;MinHeight=360;
         MaxHeight=SystemParameters.WorkArea.Height;MaxWidth=SystemParameters.WorkArea.Width;
         WindowStartupLocation=WindowStartupLocation.CenterScreen;
-        Background=Accessibility.HighContrast?SystemColors.WindowBrush:UI.Brush("#111214");
-        Foreground=Accessibility.HighContrast?SystemColors.WindowTextBrush:UI.Brush("#F3F4F6");
+        SettingsPalette.Hook();Resources.MergedDictionaries.Add(SettingsPalette.Create(app.Settings));Background=Brushes.Transparent;
+        SetResourceReference(ForegroundProperty,"ControlText");
+        Resources[typeof(CheckBox)]=new Style(typeof(CheckBox),(Style)FindResource("SettingsSwitch")){Setters={new Setter(Control.ForegroundProperty,new DynamicResourceExtension("ControlText"))}};
+
         FontFamily=new FontFamily("Segoe UI Variable, Segoe UI");FontSize=13;
         var layout=new Grid();layout.RowDefinitions.Add(new());layout.RowDefinitions.Add(new(){Height=GridLength.Auto});
         var scroll=UI.Scroll(body);layout.Children.Add(scroll);
@@ -38,7 +40,20 @@ internal sealed class WelcomeWindow : Window
         var skip=UI.CaptionButton("Skip setup",Skip);footer.Children.Add(skip);
         back=UI.CaptionButton("Back",()=>{step--;Render();});next=UI.CaptionButton("Next",()=>{if(step<2){step++;Render();}else Finish(purpose=="AI");},true);
         footer.Children.Add(back);footer.Children.Add(next);Grid.SetRow(footer,1);layout.Children.Add(footer);
-        Content=layout;Render();
+        Content=Frame(layout);Render();
+    }
+
+    private FrameworkElement Frame(UIElement content)
+    {
+        WindowStyle=WindowStyle.None;UseLayoutRounding=true;SnapsToDevicePixels=true;
+        System.Windows.Shell.WindowChrome.SetWindowChrome(this,new(){CaptionHeight=48,ResizeBorderThickness=new(6),GlassFrameThickness=new(0),UseAeroCaptionButtons=false});
+        var grid=new Grid();grid.RowDefinitions.Add(new(){Height=new GridLength(48)});grid.RowDefinitions.Add(new());Grid.SetRow(content,1);grid.Children.Add(content);
+        var caption=new DockPanel{Margin=new(18,0,8,0)};
+        var close=UI.CaptionButton("Close Settings",Close);close.Content="×";close.FontSize=20;close.Width=38;close.Background=Brushes.Transparent;close.Padding=new(0);System.Windows.Shell.WindowChrome.SetIsHitTestVisibleInChrome(close,true);DockPanel.SetDock(close,Dock.Right);caption.Children.Add(close);
+        var title=UI.Caption("Welcome to NabyScape",13);title.VerticalAlignment=VerticalAlignment.Center;caption.Children.Add(title);grid.Children.Add(caption);
+        var outer=new Border{CornerRadius=new(20),BorderThickness=new(1),Child=grid};outer.SetResourceReference(Border.BackgroundProperty,"SettingsCanvas");outer.SetResourceReference(Border.BorderBrushProperty,"SettingsLine");
+        void Outline(){grid.Clip=new RectangleGeometry(new Rect(0,0,Math.Max(0,grid.ActualWidth),Math.Max(0,grid.ActualHeight)),20,20);SettingsWindowOutline.Update(this,20);}
+        SizeChanged+=(_,_)=>Outline();SourceInitialized+=(_,_)=>Outline();DpiChanged+=(_,_)=>Outline();StateChanged+=(_,_)=>Outline();return outer;
     }
 
     private void Render()
@@ -53,7 +68,7 @@ internal sealed class WelcomeWindow : Window
             foreach(var choice in new[]{("Music","Playback, volume, clock and weather"),("Productivity","Focus, timer, notes, tasks and calendar"),("AI","Naby voice, clock and notes · connect your provider next"),("Custom","Recommended NabyScape setup · keep the complete default experience")})
             {
                 var content=new StackPanel();content.Children.Add(UI.Text(Localization.Text(choice.Item1=="Custom"?"Recommended":choice.Item1)+(purpose==choice.Item1?" · "+Localization.Text("Selected"):""),16));var hint=UI.Caption(choice.Item2,12,UI.Muted);hint.Margin=new(0,5,0,0);content.Children.Add(hint);
-                var button=UI.CaptionButton(choice.Item1,()=>{purpose=choice.Item1;ChoosePurpose();Render();});button.Content=content;button.Padding=new(16);button.Margin=new(0,10,0,0);button.HorizontalContentAlignment=HorizontalAlignment.Left;button.Background=UI.Brush(purpose==choice.Item1?app.Settings.SelectionFill:app.Settings.ControlFill);body.Children.Add(button);
+                var button=UI.CaptionButton(choice.Item1,()=>{purpose=choice.Item1;ChoosePurpose();Render();});button.Content=content;button.Padding=new(16);button.Margin=new(0,10,0,0);button.HorizontalContentAlignment=HorizontalAlignment.Left;button.SetResourceReference(Control.BackgroundProperty,purpose==choice.Item1?"SelectionFill":"SettingsCard");button.BorderThickness=new(1);button.SetResourceReference(Control.BorderBrushProperty,purpose==choice.Item1?"Accent":"SettingsLineSoft");button.Tag=new CornerRadius(16);body.Children.Add(button);
             }
             body.Children.Add(UI.Caption("Choose a purpose to change widgets, or keep Recommended to use the complete default setup. Microphone listening starts only when you choose it.",12,UI.Muted));
         }
@@ -81,7 +96,7 @@ internal sealed class WelcomeWindow : Window
             body.Children.Add(UI.Text(Localization.Format("Clipboard history: {0} · Download alerts: {1}. Change these in Settings at any time.",Localization.Text(app.Settings.ClipboardHistory?"On":"Off"),Localization.Text(app.Settings.DownloadsEnabled?"On":"Off")),12,UI.Muted));
             body.Children.Add(UI.Caption("You can reopen this guide from Settings > General.",12,UI.Muted));
         }
-        body.Children.Add(error);
+        body.Children.Add(error);SettingsPalette.BindTree(this);
     }
 
     private void ChoosePurpose()

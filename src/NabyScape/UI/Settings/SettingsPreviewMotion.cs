@@ -48,6 +48,7 @@ public sealed partial class SettingsWindow
     }
     private void PreviewDisplayFrame(object? sender,EventArgs args)
     {
+        if(interactiveBounds)return;
         var stamp=((RenderingEventArgs)args).RenderingTime;if(!previewPacer.Accept(stamp,Math.Min(30,Motion.FrameLimit)))return;
         RunPreviewFrame();
     }

@@ -12,6 +12,7 @@ internal static class SettingsChangeFeedback
 {
     private static readonly Dictionary<string,string> Labels=new()
     {
+        ["WindowTheme"]="Window theme",["WindowGlass"]="Transparency and blur",["WindowLargeCorners"]="Window corners",["WindowEffects"]="Interface effects",["WindowCompact"]="Compact mode",["WindowHoverAccents"]="Show hover accents",
         ["CoverAmbient"]="Ambient light",["ClosedAmbient"]="Closed dock ambience",
         ["AmbientStrength"]="Ambient intensity",["AutoCheckUpdates"]="Automatic update checks",
         ["AutoDownloadUpdates"]="Automatic update downloads",["Width"]="Closed dock width",

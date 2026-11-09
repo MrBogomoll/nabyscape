@@ -20,7 +20,7 @@ public sealed partial class SettingsWindow
     }
     internal void ApplyMaterial()
     {
-        var hwnd=new WindowInteropHelper(this).Handle;if(hwnd==IntPtr.Zero)return;
+        if(interactiveBounds)return;var hwnd=new WindowInteropHelper(this).Handle;if(hwnd==IntPtr.Zero)return;
         string requested=app.Settings.WindowEffects?SettingsBackdrop.Requested(app.Settings):"Solid";var conditions=SettingsBackdrop.ReadConditions() with{HighContrast=Accessibility.HighContrast};
         if(materialKey is {} key && key==(requested,conditions))return;materialKey=(requested,conditions);
         MaterialResult=SettingsBackdrop.Resolve(requested,conditions,type=>SettingsBackdrop.Apply(hwnd,type));

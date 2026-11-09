@@ -24,7 +24,7 @@ internal static class SettingsPalette
     }
     private static void OnLoaded(object sender,RoutedEventArgs args)
     {
-        if(sender is not FrameworkElement element || (bool)element.GetValue(PreserveProperty) || Window.GetWindow(element) is not SettingsWindow)return;
+        if(sender is not FrameworkElement element || (bool)element.GetValue(PreserveProperty) || Window.GetWindow(element) is not (SettingsWindow or WelcomeWindow))return;
         BindElement(element);
     }
     private static void BindElement(FrameworkElement element)
@@ -94,6 +94,7 @@ internal static class SettingsPalette
         }
         glass.Freeze();d["SettingsCanvas"]=glass;
         d["SettingsRowPadding"]=s.WindowCompact?new Thickness(18,5,16,5):new Thickness(20,10,18,10);
+        Add("PopupFill",light?"#F7F7F7":"#303030");Add("SettingsFooter",light?"#20FFFFFF":"#12000000");
         Add("SettingsCaption",light?"#40FFFFFF":"#25000000");
         if(Accessibility.HighContrast)
         {

@@ -31,7 +31,8 @@ public sealed partial class SettingsWindow
         var outer=new Border{BorderThickness=new(1),CornerRadius=new(app.Settings.WindowLargeCorners?28:12),Child=frame};windowFrame=outer;
         outer.SetResourceReference(Border.BackgroundProperty,"SettingsCanvas");outer.SetResourceReference(Border.BorderBrushProperty,"SettingsLine");
         void Clip(){double radius=WindowState==WindowState.Maximized?0:outer.CornerRadius.TopLeft;frame.Clip=new RectangleGeometry(new Rect(0,0,Math.Max(0,frame.ActualWidth),Math.Max(0,frame.ActualHeight)),radius,radius);}
-        frame.SizeChanged+=(_,_)=>Clip();outer.LayoutUpdated+=(_,_)=>{if(frame.Clip is RectangleGeometry rect && rect.RadiusX!=(WindowState==WindowState.Maximized?0:outer.CornerRadius.TopLeft))Clip();};
+        refreshWindowOutline=()=>{Clip();SettingsWindowOutline.Update(this,outer.CornerRadius.TopLeft);};
+        frame.SizeChanged+=(_,_)=>refreshWindowOutline();SourceInitialized+=(_,_)=>refreshWindowOutline();StateChanged+=(_,_)=>refreshWindowOutline();DpiChanged+=(_,_)=>refreshWindowOutline();
         return outer;
     }
 }

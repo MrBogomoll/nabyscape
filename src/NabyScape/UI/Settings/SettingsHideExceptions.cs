@@ -23,7 +23,7 @@ public sealed partial class SettingsWindow
             foreach(string executable in s.HideAppExceptions.ToArray())
             {
                 var row=new DockPanel{Margin=new(0,3,0,3)};
-                var remove=UI.CaptionButton("Remove",()=>{s.HideAppExceptions.Remove(executable);Save();Refresh();});DockPanel.SetDock(remove,Dock.Right);row.Children.Add(remove);row.Children.Add(UI.Text(executable,13));entries.Children.Add(row);
+                var remove=UI.CaptionButton("Remove",()=>{s.HideAppExceptions.Remove(executable);Save();Refresh();});DockPanel.SetDock(remove,Dock.Right);row.Children.Add(remove);var label=UI.Text(executable,13);label.FontWeight=FontWeights.SemiBold;row.Children.Add(label);entries.Children.Add(new Border{Child=row,Background=SettingsTheme.LimeWash,BorderBrush=SettingsTheme.Line,BorderThickness=new(3,0,0,0),CornerRadius=new(8),Padding=new(12,3,8,3),Margin=new(0,3,0,3)});
             }
         }
         void Add(string value)

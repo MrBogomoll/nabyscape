@@ -14,7 +14,7 @@ internal static class SettingsThemeDiagnostics
 {
     internal static async Task Run(App app,OverlayWindow island,string directory,Action<string,bool> check)
     {
-        island.Hide();app.Settings.UiLanguage="ru";app.Settings.SettingsShowAll=true;Localization.Configure(app.Settings);
+        island.Hide();app.Settings.UiLanguage="ru";app.Settings.SettingsShowAll=true;app.Settings.HideAppExceptions=new(){"chatgpt.exe","explorer.exe"};Localization.Configure(app.Settings);
         var window=new SettingsWindow(app){Width=1100,Height=900,ShowActivated=false};
         try
         {
@@ -31,6 +31,9 @@ internal static class SettingsThemeDiagnostics
                 check("Window theme switches live to "+theme,app.Settings.WindowTheme==theme);
                 var text=(SolidColorBrush)window.FindResource("ControlText");var selected=(SolidColorBrush)window.FindResource("SettingsSelected");var ink=(SolidColorBrush)window.FindResource("SettingsSelectedText");
                 check(theme+" selected navigation remains readable",Contrast(selected.Color,ink.Color)>=7);
+                check(theme+" dropdown backgrounds are opaque",((SolidColorBrush)window.FindResource("PopupFill")).Color.A==255);
+                button.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice,0){RoutedEvent=System.Windows.Input.Mouse.MouseEnterEvent});await Task.Delay(250);
+                check(theme+" hovered text retains its original scale",button.RenderTransform.Value.IsIdentity);
                 check(theme+" text palette has correct polarity",theme=="Light"?text.Color.R<40:text.Color.R>220);
                 check(theme+" visible theme captions use the selected palette",Tree(window).OfType<TextBlock>().Where(t=>t.Text==Localization.Text("Window theme") || t.Text==Localization.Text("Transparency and blur") || t.Text==Localization.Text("Window appearance")).All(t=>t.Foreground is SolidColorBrush color && color.Color==text.Color));
                 Save(window,Path.Combine(directory,"theme-"+theme+".png"));

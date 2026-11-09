@@ -58,7 +58,7 @@ public sealed partial class SettingsWindow
         foreach(var shape in shapes)
             BindingOperations.SetBinding(shape,shape.Stroke!=null?Shape.StrokeProperty:Shape.FillProperty,new Binding("Foreground"){RelativeSource=new RelativeSource(RelativeSourceMode.FindAncestor,typeof(Button),1)});
         row.Children.Add(glyph);
-        var text=UI.Text(title,13);text.TextWrapping=TextWrapping.NoWrap;text.TextTrimming=TextTrimming.CharacterEllipsis;text.VerticalAlignment=VerticalAlignment.Center;text.ClearValue(TextBlock.ForegroundProperty);Grid.SetColumn(text,2);row.Children.Add(text);
+        var text=UI.Text(title,12);text.TextWrapping=TextWrapping.Wrap;text.TextTrimming=TextTrimming.None;text.VerticalAlignment=VerticalAlignment.Center;text.ClearValue(TextBlock.ForegroundProperty);Grid.SetColumn(text,2);row.Children.Add(text);
         return row;
     }
     private static void AddSectionHint(StackPanel content,string title)

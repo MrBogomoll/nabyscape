@@ -13,6 +13,7 @@ public sealed partial class SettingsWindow
     private Border? windowFrame,sidebarSurface;
     private Grid? windowShell;
     private string? appearanceKey;
+    private Action? refreshWindowOutline;
     private void InitializeWindowAppearance()
     {
         SettingsPalette.Hook();app.Settings.NormalizeWindowTheme();
@@ -39,7 +40,8 @@ public sealed partial class SettingsWindow
             entry.Radio.SetResourceReference(Shape.FillProperty,selected?"Accent":"ControlFill");
             System.Windows.Automation.AutomationProperties.SetItemStatus(entry.Button,Localization.Text(selected?"Selected":"Not selected"));
         }
-        if(sidebarSurface!=null)sidebarSurface.Effect=s.WindowEffects && !Accessibility.HighContrast?new System.Windows.Media.Effects.DropShadowEffect{BlurRadius=18,ShadowDepth=2,Opacity=s.WindowTheme=="Light"?.06:.15,Color=Colors.Black}:null;
+        if(sidebarSurface!=null)sidebarSurface.Effect=null;
+        refreshWindowOutline?.Invoke();
         if(windowShell!=null)windowShell.InvalidateVisual();
         materialKey=null;
         if(IsLoaded)ApplyMaterial();

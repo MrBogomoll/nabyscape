@@ -66,7 +66,7 @@ internal static class Motion
         var scale=new ScaleTransform(1,1);var lift=new TranslateTransform();button.RenderTransformOrigin=new(.5,.5);button.RenderTransform=new TransformGroup{Children={scale,lift}};
         void State(bool hover,bool pressed=false)
         {
-            bool active=Enabled && Interaction!="Off" && button.IsEnabled;bool expressive=Interaction=="Expressive";
+            bool active=Enabled && Interaction!="Off" && button.IsEnabled && Window.GetWindow(button) is not (SettingsWindow or WelcomeWindow);bool expressive=Interaction=="Expressive";
             double value=!active?1:pressed?(expressive?.94:.965):hover?(expressive?1.035:1.018):1;
             To(scale,ScaleTransform.ScaleXProperty,value,pressed?100:220);To(scale,ScaleTransform.ScaleYProperty,value,pressed?100:220);To(lift,TranslateTransform.YProperty,active && hover && !pressed?(expressive?-1.5:-.6):0,180);
         }
