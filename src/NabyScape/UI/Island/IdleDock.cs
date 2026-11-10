@@ -37,7 +37,7 @@ public sealed partial class OverlayWindow
             else summary.Visibility=closedTitleWave.Visibility==Visibility.Visible?Visibility.Collapsed:Visibility.Visible;
             UpdateAmbientMotion();
         }
-        if(idleClosed)summary.Visibility=Visibility.Collapsed;
+        if(idleClosed)summary.Visibility=compactClock.Visibility==Visibility.Visible?Visibility.Collapsed:Visibility.Visible;
         // Equal side clearance keeps the date on the dock's center, independent of the clock or character.
         double dateRoom=ClosedContentWidth-compact.Padding.Left-compact.Padding.Right-2*Math.Max(60,compactClock.ActualWidth+10);
         idleDate.MaxWidth=Math.Max(0,dateRoom);

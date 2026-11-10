@@ -46,7 +46,7 @@ internal static class ClosedLyricsFallbackDiagnostics
         s.ReduceMotion=false;s.LiveActivity=false;app.ChangeSettings();await Task.Delay(100);
         check("Lyrics fallback: disabled live animation stays static",dock.ClosedTitleWaveVisible && dock.ClosedTitleWaveLevel==0);
         app.Session.Timer.Start(600,DateTimeOffset.UtcNow);s.Widgets.Find(w=>w.Id=="timer")!.Enabled=true;app.ChangeSettings();
-        check("Lyrics fallback: timer keeps priority",!dock.ClosedTitleWaveVisible && dock.HeaderLabel.Text.StartsWith("Timer",StringComparison.Ordinal));
+        check("Lyrics fallback: timer keeps priority",!dock.ClosedTitleWaveVisible && dock.HeaderLabel.Text.StartsWith(Localization.Text("Timer  ").TrimEnd(),StringComparison.Ordinal));
         app.Session.Timer.Reset();s.Widgets.Find(w=>w.Id=="timer")!.Enabled=false;app.ChangeSettings();
         app.Media.DiagnosticPlayback(false);await Task.Delay(100);
         check("Lyrics fallback: paused playback has no media waveform",!dock.ClosedTitleWaveVisible);

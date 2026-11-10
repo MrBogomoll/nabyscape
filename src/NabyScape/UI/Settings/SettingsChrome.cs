@@ -17,10 +17,8 @@ public sealed partial class SettingsWindow
         // A separate caption makes the draggable part of the window visible.
         var bar=new Grid{VerticalAlignment=VerticalAlignment.Top,Height=58};bar.SetResourceReference(Panel.BackgroundProperty,"SettingsCaption");bar.ColumnDefinitions.Add(new());bar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});bar.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
         var caption=UI.Row(BrandMark.Create(32),UI.Caption("NabyScape Settings",14));caption.Margin=new(26,0,0,0);caption.VerticalAlignment=VerticalAlignment.Center;((FrameworkElement)caption.Children[1]).Margin=new(12,0,0,0);caption.IsHitTestVisible=false;bar.Children.Add(caption);
-        var grip=new Grid{Width=24,Height=14,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center,IsHitTestVisible=false};
-        for(int i=0;i<6;i++){var dot=new System.Windows.Shapes.Ellipse{Width=3,Height=3,HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Top,Margin=new((i%3)*9,(i/3)*9,0,0)};dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty,"SettingsQuiet");grip.Children.Add(dot);}bar.Children.Add(grip);
         titleSearchHost=new Border{Width=280,VerticalAlignment=VerticalAlignment.Center,Margin=new(12,0,12,0)};Grid.SetColumn(titleSearchHost,1);WindowChrome.SetIsHitTestVisibleInChrome(titleSearchHost,true);bar.Children.Add(titleSearchHost);
-        void FitCaption(){bool compact=ActualWidth<900;((FrameworkElement)caption.Children[1]).Visibility=compact?Visibility.Collapsed:Visibility.Visible;caption.Margin=new(compact?16:26,0,0,0);grip.Visibility=ActualWidth<1200?Visibility.Collapsed:Visibility.Visible;titleSearchHost.Width=Math.Clamp(ActualWidth-320,170,300);}
+        void FitCaption(){bool compact=ActualWidth<900;((FrameworkElement)caption.Children[1]).Visibility=compact?Visibility.Collapsed:Visibility.Visible;caption.Margin=new(compact?16:26,0,0,0);titleSearchHost.Width=Math.Clamp(ActualWidth-320,170,300);}
         SizeChanged+=(_,_)=>FitCaption();Loaded+=(_,_)=>FitCaption();
         var actions=new StackPanel{Orientation=Orientation.Horizontal};Grid.SetColumn(actions,2);bar.Children.Add(actions);
         Button Caption(string name,string data,Action action)

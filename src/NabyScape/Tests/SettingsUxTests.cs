@@ -117,6 +117,15 @@ internal static class SettingsUxTests
             var scaled=new System.Windows.Rect(1700,900,1100,780);
             Assert(right.Contains(SettingsWindow.FitWorkingArea(scaled,right,1.5)));
         });
+        test("Settings live drag proposals stop at all working-area edges",()=>
+        {
+            foreach(var area in new[]{new System.Windows.Rect(0,0,1920,1040),new System.Windows.Rect(-1920,-240,1920,1040)})
+            foreach(var point in new[]{new System.Windows.Point(area.Left-600,area.Top+50),new System.Windows.Point(area.Right-50,area.Top+50),new System.Windows.Point(area.Left+50,area.Top-400),new System.Windows.Point(area.Left+50,area.Bottom-50)})
+            {
+                var proposed=new System.Windows.Rect(point.X,point.Y,900,700);var constrained=SettingsWindow.FitWorkingArea(proposed,area,1);
+                Assert(area.Contains(constrained) && constrained.Size==proposed.Size);
+            }
+        });
         test("Settings containment leaves native maximized and minimized placement untouched",()=>
         {
             foreach(var state in new[]{System.Windows.WindowState.Maximized,System.Windows.WindowState.Minimized})

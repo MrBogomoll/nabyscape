@@ -45,6 +45,26 @@ internal static class SettingsThemeDiagnostics
             IntPtr Hit(double x,double y){var point=window.PointToScreen(new Point(x,y));return SendMessage(handle,0x84,IntPtr.Zero,new IntPtr(((int)point.Y<<16)|((int)point.X&0xffff)));}
             check("The visible title bar is a native drag area",Hit(window.ActualWidth/2,29)==new IntPtr(2));
             check("The close button remains clickable",Hit(window.ActualWidth-24,29)==new IntPtr(1));
+            IntPtr trackInfo=Marshal.AllocHGlobal(40);
+            try
+            {
+                Marshal.Copy(new byte[40],0,trackInfo,40);SendMessage(handle,0x0024,IntPtr.Zero,trackInfo);
+                var display=System.Windows.Forms.Screen.FromHandle(handle);double trackScale=Native.Scale(display);
+                check("Native resize minimum matches the WPF content minimum",Marshal.ReadInt32(trackInfo,24)>=Math.Min(Math.Ceiling(window.MinWidth*trackScale),display.WorkingArea.Width) && Marshal.ReadInt32(trackInfo,28)>=Math.Min(Math.Ceiling(window.MinHeight*trackScale),display.WorkingArea.Height));
+            }
+            finally{Marshal.FreeHGlobal(trackInfo);}
+            var pointerScreen=System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position);var moveArea=pointerScreen.WorkingArea;
+            IntPtr moveBuffer=Marshal.AllocHGlobal(Marshal.SizeOf<Native.Rect>());
+            try
+            {
+                foreach(var proposed in new[]{new Native.Rect{Left=moveArea.Right-40,Top=moveArea.Top+40,Right=moveArea.Right+860,Bottom=moveArea.Top+740},new Native.Rect{Left=moveArea.Left-600,Top=moveArea.Top-200,Right=moveArea.Left+300,Bottom=moveArea.Top+500}})
+                {
+                    Marshal.StructureToPtr(proposed,moveBuffer,false);var result=SendMessage(handle,0x0216,IntPtr.Zero,moveBuffer);var constrained=Marshal.PtrToStructure<Native.Rect>(moveBuffer);
+                    check("Native drag rectangle is constrained before painting",result==new IntPtr(1) && constrained.Left>=moveArea.Left && constrained.Top>=moveArea.Top && constrained.Right<=moveArea.Right && constrained.Bottom<=moveArea.Bottom);
+                }
+            }
+            finally{Marshal.FreeHGlobal(moveBuffer);}
+
             foreach(string theme in new[]{"Light","Dark","Light"})
             {
                 string caption=theme=="Light"?"Light theme":"Dark theme";
@@ -109,6 +129,20 @@ internal static class SettingsThemeDiagnostics
             var task=app.Productivity.Tasks.Last(t=>t.Text=="Проверить библиотеку заметок");
             var taskCheck=Tree(window).OfType<CheckBox>().Single(c=>UI.Identity(c)==task.Text);taskCheck.IsChecked=true;taskCheck.RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
             check("Tasks page completion survives a store reload",app.Store.Load<ProductivityData>("productivity").Tasks.Any(t=>t.Id==task.Id && t.Done));Save(window,Path.Combine(directory,"tasks-list.png"));
+            window.Hide();app.Settings.HideFullscreen=app.Settings.HideMaximized=app.Settings.AlwaysTucked=false;
+            app.Settings.Widgets.Single(w=>w.Id=="clock").Enabled=false;app.Settings.Widgets.Single(w=>w.Id=="notes").Enabled=true;
+            app.Session.Timer.Reset();app.Session.Focus.Reset();app.Media.DiagnosticPlayback(false);app.ChangeSettings();island.Show();island.Collapse();app.PublishUpdate(RuntimeChange.Media);await Task.Delay(160);
+            check("Idle dock remains informative when clock is disabled",island.HeaderLabel.Visibility==Visibility.Visible && !string.IsNullOrWhiteSpace(island.HeaderLabel.Text));Save(island,Path.Combine(directory,"idle-without-clock.png"));
+            island.PreviewActivity();island.SelectPeek("notes");await Task.Delay(350);
+            var peekDraft=Diagnostics.Descendants(island).OfType<TextBox>().Single(t=>UI.Identity(t)==Localization.Text("Preview note draft"));
+            peekDraft.Text="Быстрая заметка из свёрнутой панели";
+            var peekSave=Diagnostics.Descendants(island).OfType<Button>().Single(b=>UI.Identity(b)==Localization.Text("Save preview note"));peekSave.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            check("Quick preview Save note archives text in the library",app.Store.Load<ProductivityData>("productivity").Notes.Any(n=>n.Text==peekDraft.Text) && (string?)peekSave.Content==Localization.Text("Saved"));
+            check("Quick preview saved feedback is localized",(string?)peekSave.Content=="Сохранено");
+            int savedCount=app.Productivity.Notes.Count;peekSave.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));check("Quick preview repeated save does not duplicate the note",app.Productivity.Notes.Count==savedCount);Save(island,Path.Combine(directory,"quick-note-saved.png"));
+            Diagnostics.Descendants(island).OfType<Button>().Single(b=>UI.Identity(b)==Localization.Text("Open all notes")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(80);
+            var noteSettings=Application.Current.Windows.OfType<SettingsWindow>().Single(w=>!ReferenceEquals(w,window));
+            check("Quick preview All notes opens the saved library",(string?)typeof(SettingsWindow).GetField("current",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(noteSettings)=="Notes");noteSettings.Close();island.Hide();window.Show();
             window.OpenCategory("Home");await Task.Delay(60);
             System.Windows.SystemCommands.MaximizeWindow(window);await Task.Delay(250);window.UpdateLayout();
             var outer=(Border)typeof(SettingsWindow).GetField("windowFrame",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)!;
@@ -121,7 +155,7 @@ internal static class SettingsThemeDiagnostics
             System.Windows.SystemCommands.RestoreWindow(window);await Task.Delay(150);
             check("Restoring settings restores the rounded outline",window.WindowState==WindowState.Normal && outer.CornerRadius.TopLeft>0);
             var restored=app.Store.Load<Settings>("settings");
-            check("Theme change saves to the isolated profile",restored.WindowTheme=="Light");
+            check("Theme change saves to the isolated profile",restored.WindowTheme==app.Settings.WindowTheme);
             window.Width=1100;window.Height=780;window.OpenCategory("Appearance");await Task.Delay(60);
             var glass=Tree(window).OfType<Slider>().First(s=>UI.Identity(s)=="Transparency and blur");glass.Value=40;await Task.Delay(70);
             check("Glass slider requests the real system blur",app.Settings.SettingsMaterial=="Native Acrylic" && app.Settings.WindowGlass==40);

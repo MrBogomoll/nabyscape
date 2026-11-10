@@ -24,6 +24,7 @@ public sealed partial class OverlayWindow
     private readonly Dictionary<string,(TextBlock time,TextBlock detail,Button toggle,ProgressBar progress)> peekClocks=new();
     private readonly TextBlock peekEventTitle=UI.Text("",16),peekEventTime=UI.Text("",11,UI.Muted),peekShelfName=UI.Text("",14),peekShelfCount=UI.Text("",11,UI.Muted);
     private TextBox peekNote=null!;
+    private Button? peekNoteSave;
     private Button peekPrevious=null!,peekNext=null!,peekJoin=null!,peekShelfFile=null!,peekMute=null!,peekTrackPrevious=null!,peekTrackNext=null!,peekOutput=null!;
     private Slider peekVolume=null!;
     private string peekId="media";
@@ -229,12 +230,20 @@ public sealed partial class OverlayWindow
     private FrameworkElement BuildPeekNote()
     {
         var page=new StackPanel();var label=UI.Text(Localization.Text("Quick note"),11,UI.Muted);label.Margin=new(0,3,0,10);page.Children.Add(label);
-        peekNote=UI.Input(Localization.Text("Preview note draft"),app.Productivity.Note);peekNote.TextChanged+=(_,_)=>{if(syncingNote)return;app.Productivity.Note=peekNote.Text;noteSave.Stop();noteSave.Start();};peekNote.Height=53;peekNote.MaxLength=50000;peekNote.Padding=new(9,7,9,7);peekNote.Margin=new(0);peekNote.AcceptsReturn=true;peekNote.TextWrapping=TextWrapping.Wrap;peekNote.VerticalContentAlignment=VerticalAlignment.Top;peekNote.VerticalScrollBarVisibility=ScrollBarVisibility.Auto;peekNote.PreviewMouseLeftButtonDown+=(_,_)=>{Activate();PromotePeek();};page.Children.Add(peekNote);
-        var actions=new StackPanel{Orientation=Orientation.Horizontal,Margin=new(0,9,0,0)};var save=PlainPeekButton(Localization.Text("Save preview note"),SavePeekNote);save.Content=Localization.Text("Save note");save.FontSize=12;actions.Children.Add(save);var open=PlainPeekButton(Localization.Text("Open all notes"),()=>{ShowTools("notes");});open.Content=Localization.Text("All notes");open.Foreground=UI.Muted;open.FontSize=12;open.Margin=new(20,0,0,0);actions.Children.Add(open);page.Children.Add(actions);return page;
+        peekNote=UI.Input(Localization.Text("Preview note draft"),app.Productivity.Note);peekNote.TextChanged+=(_,_)=>{if(syncingNote)return;app.Productivity.Note=peekNote.Text;noteSave.Stop();noteSave.Start();if(peekNoteSave!=null){peekNoteSave.Content=Localization.Text("Save note");peekNoteSave.IsEnabled=!string.IsNullOrWhiteSpace(peekNote.Text);}};peekNote.Height=53;peekNote.MaxLength=50000;peekNote.Padding=new(9,7,9,7);peekNote.Margin=new(0);peekNote.AcceptsReturn=true;peekNote.TextWrapping=TextWrapping.Wrap;peekNote.VerticalContentAlignment=VerticalAlignment.Top;peekNote.VerticalScrollBarVisibility=ScrollBarVisibility.Auto;peekNote.PreviewMouseLeftButtonDown+=(_,_)=>{Activate();PromotePeek();};page.Children.Add(peekNote);
+        var actions=new StackPanel{Orientation=Orientation.Horizontal,Margin=new(0,9,0,0)};var save=PlainPeekButton(Localization.Text("Save preview note"),SavePeekNote);save.Content=Localization.Text("Save note");save.FontSize=12;peekNoteSave=save;save.IsEnabled=!string.IsNullOrWhiteSpace(peekNote.Text);actions.Children.Add(save);var open=PlainPeekButton(Localization.Text("Open all notes"),()=>{FlushNotes();app.ShowSettings("Notes");});open.Content=Localization.Text("All notes");open.Foreground=UI.Muted;open.FontSize=12;open.Margin=new(20,0,0,0);actions.Children.Add(open);page.Children.Add(actions);return page;
     }
     private void SavePeekNote()
     {
-        FlushNotes();
+        if(string.IsNullOrWhiteSpace(peekNote.Text))return;
+        noteSave.Stop();app.Productivity.Note=peekNote.Text;
+        bool saved=app.Productivity.SaveDraftToLibrary();
+        if(peekNoteSave!=null)
+        {
+            peekNoteSave.Content=Localization.Text(saved?"Saved":"Retry save");
+            peekNoteSave.ToolTip=Localization.Text(saved?"Note saved to your library. The quick draft is unchanged.":"Could not save this note. Check the library capacity or try again.");
+        }
+        if(!saved)app.Notify(Localization.Text("Notes"),Localization.Text("Could not save this note. Check the library capacity or try again."));
     }
 
     private FrameworkElement BuildPeekShelf()

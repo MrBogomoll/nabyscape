@@ -82,6 +82,7 @@ public sealed partial class OverlayWindow
     }
     private void SetClosedSummary(string text)
     {
+        if(string.IsNullOrWhiteSpace(text) && IdleContent && !WidgetOn("clock"))text=Localization.Text(WidgetOn("media")?"Nothing playing":"Ready");
         if(summary.Text==text){RefreshLyricMarquee();return;}
         bool animate=WantsClosedLyrics && Motion.Enabled && !app.Settings.ReduceMotion && summary.Text.Length>0;
         if(animate)

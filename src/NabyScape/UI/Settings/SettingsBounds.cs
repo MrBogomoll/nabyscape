@@ -50,7 +50,23 @@ public sealed partial class SettingsWindow
             var bounds=MaximizedWorkingBounds(new Rect(monitor.Left,monitor.Top,monitor.Width,monitor.Height),new Rect(work.Left,work.Top,work.Width,work.Height));
             var info=Marshal.PtrToStructure<SettingsMinMaxInfo>(lparam);
             info.MaxPosition=new(){X=(int)bounds.X,Y=(int)bounds.Y};info.MaxSize=new(){X=(int)bounds.Width,Y=(int)bounds.Height};
+            // Handling WM_GETMINMAXINFO bypasses WPF's minimum-track update.
+            // Keep the native frame at least as large as WPF's layout minimum.
+            double scale=Native.Scale(screen);
+            info.MinTrackSize=new(){X=Math.Max(info.MinTrackSize.X,(int)Math.Ceiling(Math.Min(MinWidth*scale,work.Width))),Y=Math.Max(info.MinTrackSize.Y,(int)Math.Ceiling(Math.Min(MinHeight*scale,work.Height)))};
             Marshal.StructureToPtr(info,lparam,false);handled=true;
+        }
+        else if(message==0x0216 && lparam!=IntPtr.Zero && WindowState==WindowState.Normal) // WM_MOVING
+        {
+            // Constrain the proposed rectangle before Windows paints it, rather
+            // than correcting an off-screen window after the mouse is released.
+            // The pointer chooses the destination monitor, so crossing displays
+            // still works even while the previous window rectangle is contained.
+            var screen=Forms.Screen.FromPoint(Forms.Cursor.Position);var work=screen.WorkingArea;
+            var proposed=Marshal.PtrToStructure<Native.Rect>(lparam);
+            var fitted=FitWorkingArea(new Rect(proposed.Left,proposed.Top,proposed.Right-proposed.Left,proposed.Bottom-proposed.Top),new Rect(work.Left,work.Top,work.Width,work.Height),Native.Scale(screen));
+            proposed.Left=(int)Math.Round(fitted.Left);proposed.Top=(int)Math.Round(fitted.Top);proposed.Right=(int)Math.Round(fitted.Right);proposed.Bottom=(int)Math.Round(fitted.Bottom);
+            Marshal.StructureToPtr(proposed,lparam,false);handled=true;return new IntPtr(1);
         }
         else if(message==0x0231)interactiveBounds=true; // WM_ENTERSIZEMOVE
         else if(message==0x0232){interactiveBounds=false;QueueSettingsBounds();} // WM_EXITSIZEMOVE

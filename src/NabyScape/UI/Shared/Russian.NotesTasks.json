@@ -23,5 +23,6 @@
   "Delete task": "Удалить задачу",
   "Could not save. Try again.": "Не удалось сохранить. Попробуйте ещё раз.",
   "Open saved notes": "Открыть библиотеку",
-  "Could not save this note. Check the library capacity or try again.": "Не удалось сохранить заметку. Проверьте свободное место в библиотеке или попробуйте ещё раз."
+  "Could not save this note. Check the library capacity or try again.": "Не удалось сохранить заметку. Проверьте свободное место в библиотеке или попробуйте ещё раз.",
+  "Saved": "Сохранено"
 }
