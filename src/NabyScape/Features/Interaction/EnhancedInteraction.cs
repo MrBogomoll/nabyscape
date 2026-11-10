@@ -134,11 +134,12 @@ public sealed partial class OverlayWindow
         bool allowed=!noticeShowing && (assistantOpen || assistantPeeking?Includes("ai"):commandOpen?Includes("shortcuts"):expanded?
             PanelWidgets.Any(w=>(!s.CompactLayout || PageFor(w.Id)==activePage) && Includes(w.Id)):
             peeking?Includes(peekId):Includes("closed"));
-        allowed &= (expanded || peeking || s.ClosedAmbient && !IdleContent) && !IsTucked && !userHidden;
-        bool quiet=IsTucked || !expanded && !peeking;
-        surface.Fill=quiet?Brushes.Black:UI.Brush(s.Background);surface.GlassStyle=!quiet && s.GlassStyle;
+        allowed &= (expanded || peeking || s.ClosedAmbient) && !IsTucked && !userHidden;
+        bool quiet=IsTucked || !expanded && !peeking && !IdleContent;
+        var fill=quiet?Brushes.Black:UI.Brush(s.Background);bool glass=!quiet && s.GlassStyle;
+        if(!ReferenceEquals(surface.Fill,fill) || surface.GlassStyle!=glass){surface.Fill=fill;surface.GlassStyle=glass;surface.InvalidateVisual();}
         if(quiet)surface.AlbumTint=Colors.Transparent;
-        bool moving=app.Media.Playing && s.LiveActivity && !IsTucked && !userHidden && IsVisible && WindowState!=WindowState.Minimized;
+        bool moving=(expanded || peeking || !IdleContent) && app.Media.Playing && s.LiveActivity && !IsTucked && !userHidden && IsVisible && WindowState!=WindowState.Minimized;
         surface.SetAmbient(AmbientPolicy.ColorsFor(s,app.AmbientAudio.CoverColors),allowed?s.AmbientStrength:0,s.AmbientSpread,s.AmbientMotion,moving,AmbientLook.From(s));
         app.AmbientAudio.Set(surface,allowed && moving);
     }

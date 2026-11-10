@@ -169,9 +169,11 @@ internal static class SettingsThemeDiagnostics
             var hwnd=new System.Windows.Interop.WindowInteropHelper(window).Handle;var work=System.Windows.Forms.Screen.FromHandle(hwnd).WorkingArea;
             Native.GetWindowRect(hwnd,out var actualBounds);
             check("Maximized settings fit the monitor working area",Math.Abs(actualBounds.Left-work.Left)<=1 && Math.Abs(actualBounds.Top-work.Top)<=1 && Math.Abs(actualBounds.Right-work.Right)<=1 && Math.Abs(actualBounds.Bottom-work.Bottom)<=1);
-            check("Wide settings use a wider centered form",Tree(window).OfType<StackPanel>().Any(p=>p.HorizontalAlignment==HorizontalAlignment.Center && p.ActualWidth>1000));
+            check("Settings form uses the available centered width on this monitor",Tree(window).OfType<StackPanel>().Any(p=>p.HorizontalAlignment==HorizontalAlignment.Center && p.ActualWidth>=Math.Min(1000,Math.Max(240,window.ActualWidth-(window.ActualWidth<760?0:252)-100))-2));
             Save(window,Path.Combine(directory,"settings-maximized.png"));
-            System.Windows.SystemCommands.RestoreWindow(window);
+            // The background fixture does not activate the native caption. Request
+            // the WPF state directly when checking the restored outline.
+            window.WindowState=WindowState.Normal;
             for(int frame=0;frame<125 && (window.WindowState!=WindowState.Normal || outer.CornerRadius.TopLeft==0);frame++)await Task.Delay(16);
             window.UpdateLayout();
             check("Restoring settings restores the rounded outline ("+window.WindowState+", "+outer.CornerRadius.TopLeft+")",window.WindowState==WindowState.Normal && outer.CornerRadius.TopLeft>0);

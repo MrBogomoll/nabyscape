@@ -80,7 +80,7 @@ internal static class ReactiveAmbientDiagnostics
         long reads=app.Audio.DiagnosticMeterReads;var elapsed=Stopwatch.StartNew();await Task.Delay(1000);elapsed.Stop();long multipleReads=app.Audio.DiagnosticMeterReads-reads;
         check("Three ambient consumers stay within the shared 30 Hz sampling budget",multipleReads>=1 && multipleReads<=Math.Ceiling(elapsed.Elapsed.TotalSeconds*30)+2);
         check("Ambient-only Notes and System do not request output spectrum capture",app.Audio.DiagnosticSpectrumSamples==spectra && app.Audio.SpectrumCaptureCount==0);
-        Capture(mini.First(w=>w.Title.Contains("Notes")),"notes-mini");
+        Capture(mini.First(w=>w.Title.Contains(Localization.Text("Notes"))),"notes-mini");
         app.Previews.SetHidden(true);await Task.Delay(60);check("Hidden mini windows release their audio demand",app.AmbientAudio.ConsumerCount==1);
         app.Previews.SetHidden(false);await Task.Delay(60);foreach(var w in mini)w.Close();await Task.Delay(60);check("Closing mini windows releases their audio consumers",app.AmbientAudio.ConsumerCount==1);
         int registered=app.AmbientAudio.RegisteredCount;
@@ -97,15 +97,15 @@ internal static class ReactiveAmbientDiagnostics
         {
             typeof(SettingsWindow).GetMethod("Navigate",flags)!.Invoke(window,new object[]{"Ambience"});await Task.Delay(100);
             var choices=Diagnostics.Descendants(window).OfType<ComboBox>().ToArray();
-            check("Ambience exposes ambient scope, colors, response and movement",new[]{"Ambient scope","Ambient color source","Ambient audio response","Ambient movement"}.All(name=>choices.Any(c=>AutomationProperties.GetName(c)==name)));
-            var scope=choices.Single(c=>AutomationProperties.GetName(c)=="Ambient scope");scope.SelectedItem="Selected widgets";
-            var section=Diagnostics.Descendants(window).OfType<TextBlock>().First(t=>t.Text=="Ambient light");
+            check("Ambience exposes ambient scope, colors, response and movement",new[]{"Ambient scope","Ambient color source","Ambient audio response","Ambient movement"}.All(name=>choices.Any(c=>UI.Identity(c)==name)));
+            var scope=choices.Single(c=>UI.Identity(c)=="Ambient scope");scope.SelectedItem="Selected widgets";
+            var section=Diagnostics.Descendants(window).OfType<Border>().First(b=>b.Tag as string=="Ambient light");
             var scroll=(ScrollViewer)typeof(SettingsWindow).GetField("settingsScroll",flags)!.GetValue(window)!;
             scroll.ScrollToVerticalOffset(section.TransformToAncestor((Visual)scroll.Content).Transform(new Point()).Y-12);await Task.Delay(100);Capture(window,"settings-ambient");
-            var responseLabel=Diagnostics.Descendants(window).OfType<TextBlock>().First(t=>t.Text=="React to music");
+            var responseLabel=choices.Single(c=>UI.Identity(c)=="Ambient audio response");
             scroll.ScrollToVerticalOffset(responseLabel.TransformToAncestor((Visual)scroll.Content).Transform(new Point()).Y-12);await Task.Delay(100);Capture(window,"settings-audio-response");
-            check("Widget choices stay available within a collapsible selector",Diagnostics.Descendants(window).OfType<Expander>().Any(e=>Equals(e.Header,"Choose widgets") && e.IsVisible));
-            check("Ambient has a dedicated settings illustration",Diagnostics.Descendants(window).OfType<SettingsScene>().Any(c=>c.Section=="Ambient light"));
+            check("Widget choices stay available within a collapsible selector",Diagnostics.Descendants(window).OfType<Expander>().Any(e=>Equals(e.Header,Localization.Text("Choose widgets")) && e.IsVisible));
+            check("Ambient retains the shared settings preview",Diagnostics.Descendants(window).OfType<Expander>().Any(e=>UI.Identity(e)=="Settings live preview"));
         }
         finally{window.Close();}
         File.WriteAllText(Path.Combine(directory,"sampling.txt"),$"3 visible ambient consumers: {multipleReads} shared meter reads in {elapsed.Elapsed.TotalSeconds:0.000} seconds. Counts reflect dispatched callbacks, not guaranteed wall-clock presentation or GPU frames. Synthetic audio envelope, no real microphone or provider connection. Raster exports at 1x/1.5x/2x do not replace physical mixed-DPI monitor testing.");

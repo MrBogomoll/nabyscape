@@ -1,0 +1,4 @@
+{
+  "Single color uses the cover's dominant hue. Cover blend mixes two album colors. Custom blend uses both chosen colors. Spread and height can extend light across the whole panel; closed-dock light has its own switch. Idle keeps your chosen appearance and static light. Tucked docks stay dark.": "Один цвет использует основной оттенок обложки. Смесь обложки сочетает два её цвета, а своя смесь — выбранные вами цвета. Размер и высота расширяют подсветку на всю панель; для свёрнутой панели есть отдельный переключатель. В простое сохраняются выбранное оформление и статичная подсветка. У скрытой панели подсветка выключена.",
+  "Show ambient light on the compact dock, including static light while idle. Tucked docks stay dark. The main ambient switch must also be on.": "Подсветка свёрнутой панели, включая статичную подсветку в простое. У скрытой панели она выключена. Основной переключатель подсветки тоже должен быть включён."
+}

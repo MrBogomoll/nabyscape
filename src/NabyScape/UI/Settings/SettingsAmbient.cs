@@ -17,7 +17,7 @@ public sealed partial class SettingsWindow
         var s=app.Settings;
         string widget=previewMode=="Closed"?"closed":previewContent switch{"Music"=>"media","Timer"=>"timer","Focus"=>"focus","Stopwatch"=>"stopwatch","System"=>"system","Note"=>"notes","Tasks"=>"tasks","Calendar"=>"calendar","Shelf"=>"files","Smart clipboard"=>"clips","AI"=>"ai","Launch"=>"shortcuts",_=>"preview"};
         bool idle=previewMode=="Closed" && previewContent=="Music" && !(app.Media.Available && app.Media.Playing && s.ClosedMediaContent!="None" && s.Widgets.Any(w=>w.Id=="media" && w.Enabled)) && CompactDockPresentation.TimedKind(s,app.Session,DateTimeOffset.UtcNow).Length==0;
-        bool allowed=!idle && AmbientPolicy.Includes(s,widget),moving=app.Media.Playing && s.LiveActivity && IsVisible && WindowState!=WindowState.Minimized && previewStage.IsVisible;
+        bool allowed=AmbientPolicy.Includes(s,widget,app.Media.SourceDisabled),moving=!idle && app.Media.Playing && s.LiveActivity && IsVisible && WindowState!=WindowState.Minimized && previewStage.IsVisible;
         ambientPreview.Radius=s.Radius;
         ambientPreview.SetAmbient(AmbientPolicy.ColorsFor(s,app.AmbientAudio.CoverColors),allowed?s.AmbientStrength:0,s.AmbientSpread,s.AmbientMotion,moving,AmbientLook.From(s));
         app.AmbientAudio.Set(ambientPreview,allowed && moving);
@@ -56,7 +56,7 @@ public sealed partial class SettingsWindow
         AddSlider(fine,"Color balance",s.AmbientBalance*100,0,100,v=>s.AmbientBalance=v/100,"%",1);
         AddSlider(fine,"Light reach",s.AmbientHeight*100,25,200,v=>s.AmbientHeight=v/100,"%",1);
         AddSlider(fine,"Ambient softness",s.AmbientSoftness*100,0,100,v=>s.AmbientSoftness=v/100,"%",1);
-        fine.Children.Add(UI.Caption("Single color uses the cover's dominant hue. Cover blend mixes two album colors. Custom blend uses both chosen colors. Spread and height can extend light across the whole panel; closed-dock light has its own switch. Idle and tucked docks always stay black.",11,UI.Muted));
+        fine.Children.Add(UI.Caption("Single color uses the cover's dominant hue. Cover blend mixes two album colors. Custom blend uses both chosen colors. Spread and height can extend light across the whole panel; closed-dock light has its own switch. Idle keeps your chosen appearance and static light. Tucked docks stay dark.",11,UI.Muted));
         AddSlider(fine,"Ambient spread",s.AmbientSpread*100,25,250,v=>s.AmbientSpread=v/100,"%",1);
         controls.Children.Add(Advanced("Fine-tune light",fine));
         controls.Children.Add(PremiumChoice("Ambient audio response",s.AmbientAudioResponse,new[]{"Off","Soft","Responsive","Punchy"},v=>s.AmbientAudioResponse=v));

@@ -4,7 +4,7 @@ public sealed partial class SettingsWindow
 {
     private static readonly Dictionary<string,string> SettingDescriptions=new()
     {
-        ["Show ambience on closed dock"]="Show ambient light on the compact dock during music, voice, countdowns or notifications. Idle and tucked docks stay black. The main ambient switch must also be on.",
+        ["Show ambience on closed dock"]="Show ambient light on the compact dock, including static light while idle. Tucked docks stay dark. The main ambient switch must also be on.",
         ["Ambient light"]="Add soft colored light behind your widgets.",
         ["Ambient intensity"]="Set the brightest the light can be. Music can make it pulse below this level.",
         ["Ambient sensitivity"]="Amplifies the visual response to measured media audio without changing playback volume. 100% uses the original level.",
