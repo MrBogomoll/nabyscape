@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -11,7 +12,13 @@ public sealed partial class SettingsWindow
     private IntPtr settingsHandle;
     private bool fittingBounds,boundsQueued,interactiveBounds,boundsRecoveryQueued;
     private HwndSource? settingsSource;
-    internal static bool ShouldFitSettingsBounds(bool interactive,bool recovery)=>!interactive || recovery;
+    internal static bool ShouldFitSettingsBounds(bool interactive,bool recovery,WindowState state=WindowState.Normal)=>state==WindowState.Normal && (!interactive || recovery);
+    internal static Rect MaximizedWorkingBounds(Rect monitor,Rect area)=>new(area.Left-monitor.Left,area.Top-monitor.Top,area.Width,area.Height);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SettingsMinMaxInfo
+    {
+        public Native.Point Reserved,MaxSize,MaxPosition,MinTrackSize,MaxTrackSize;
+    }
     internal static Rect FitWorkingArea(Rect bounds,Rect area,double scale)
     {
         double width=Math.Min(bounds.Width,area.Width),height=Math.Min(bounds.Height,area.Height);
@@ -35,7 +42,17 @@ public sealed partial class SettingsWindow
     }
     private IntPtr SettingsWindowMessage(IntPtr hwnd,int message,IntPtr wparam,IntPtr lparam,ref bool handled)
     {
-        if(message==0x0231)interactiveBounds=true; // WM_ENTERSIZEMOVE
+        if(message==0x0024 && lparam!=IntPtr.Zero) // WM_GETMINMAXINFO
+        {
+            // Custom chrome has no invisible frame to extend past the monitor.
+            // Let Windows own maximize/restore, using physical monitor coordinates.
+            var screen=Forms.Screen.FromHandle(hwnd);var monitor=screen.Bounds;var work=screen.WorkingArea;
+            var bounds=MaximizedWorkingBounds(new Rect(monitor.Left,monitor.Top,monitor.Width,monitor.Height),new Rect(work.Left,work.Top,work.Width,work.Height));
+            var info=Marshal.PtrToStructure<SettingsMinMaxInfo>(lparam);
+            info.MaxPosition=new(){X=(int)bounds.X,Y=(int)bounds.Y};info.MaxSize=new(){X=(int)bounds.Width,Y=(int)bounds.Height};
+            Marshal.StructureToPtr(info,lparam,false);handled=true;
+        }
+        else if(message==0x0231)interactiveBounds=true; // WM_ENTERSIZEMOVE
         else if(message==0x0232){interactiveBounds=false;QueueSettingsBounds();} // WM_EXITSIZEMOVE
         return IntPtr.Zero;
     }
@@ -48,12 +65,12 @@ public sealed partial class SettingsWindow
         Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle,()=>
         {
             boundsQueued=false;bool recover=boundsRecoveryQueued;boundsRecoveryQueued=false;
-            if(settingsHandle!=IntPtr.Zero && IsVisible && ShouldFitSettingsBounds(interactiveBounds,recover))FitSettingsBounds(Forms.Screen.FromHandle(settingsHandle),false);
+            if(settingsHandle!=IntPtr.Zero && IsVisible && ShouldFitSettingsBounds(interactiveBounds,recover,WindowState))FitSettingsBounds(Forms.Screen.FromHandle(settingsHandle),false);
         });
     }
     private void FitSettingsBounds(Forms.Screen screen,bool initial)
     {
-        if(fittingBounds)return;fittingBounds=true;
+        if(fittingBounds || WindowState!=WindowState.Normal)return;fittingBounds=true;
         try
         {
             double scale=Native.Scale(screen);var work=screen.WorkingArea;var area=new Rect(work.Left,work.Top,work.Width,work.Height);

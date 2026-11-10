@@ -10,7 +10,7 @@ public sealed partial class SettingsWindow
 {
     // Object tags: Settings diagnostics treat string-tagged borders as setting sections.
     private static readonly object NavIndicatorTag=new();
-    private const double SidebarWidth=252,MaxContentWidth=860,StageHeight=160;
+    private const double SidebarWidth=252,MaxContentWidth=1400,StageHeight=160;
 
     // Chrome Naby beside the stacked NABY / SCAPE wordmark used on the website.
     private FrameworkElement SidebarBrand()
@@ -34,7 +34,9 @@ public sealed partial class SettingsWindow
     }
     private Border StageFrame(Border previewStage,StackPanel controls,Expander advanced)
     {
-        var column=new StackPanel();column.Children.Add(controls);column.Children.Add(previewStage);column.Children.Add(advanced);
+        var body=new Grid();body.ColumnDefinitions.Add(new());body.ColumnDefinitions.Add(new(){Width=new GridLength(145)});
+        body.Children.Add(previewStage);Grid.SetColumn(controls,1);body.Children.Add(controls);
+        var column=new StackPanel();column.Children.Add(body);column.Children.Add(advanced);
         var frame=new Border{Background=SettingsTheme.CardRaised,BorderBrush=SettingsTheme.Line,BorderThickness=new(.8),CornerRadius=new(16),Child=column};
         column.SizeChanged+=(_,e)=>column.Clip=new RectangleGeometry(new Rect(e.NewSize),15,15);
         return frame;
@@ -42,8 +44,7 @@ public sealed partial class SettingsWindow
     private void UpdatePreviewStageHeight()
     {
         if(previewStage==null)return;
-        double desired=previewMode=="Closed"?Math.Clamp(app.Settings.Height+22,54,94):previewMode=="Hover"?124:StageHeight;
-        previewStage.Height=Math.Min(desired,Math.Clamp(ActualHeight*.24,70,StageHeight));
+        previewStage.Height=StageHeight;
     }
     private static Brush Brush(string hex)=>UI.Brush(hex);
     private static string CategoryEyebrow(string id)=>Localization.Text(id=="Home"?"Welcome":Category(id).Group).ToUpperInvariant();

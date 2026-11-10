@@ -8,8 +8,10 @@ internal static class SettingsWindowOutline
 {
     internal static void Update(Window window,double radius)
     {
-        if(window.AllowsTransparency)return;
         var handle=new WindowInteropHelper(window).Handle;if(handle==IntPtr.Zero)return;
+        // WindowChrome can install its own HRGN when the native frame changes.
+        // Layered windows already have a precise alpha outline in their client.
+        if(window.AllowsTransparency){SetWindowRgn(handle,IntPtr.Zero,true);return;}
         if(window.WindowState==WindowState.Maximized){SetWindowRgn(handle,IntPtr.Zero,true);return;}
         var dpi=VisualTreeHelper.GetDpi(window);int width=(int)Math.Ceiling(window.ActualWidth*dpi.DpiScaleX),height=(int)Math.Ceiling(window.ActualHeight*dpi.DpiScaleY);
         if(width<1 || height<1)return;

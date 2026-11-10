@@ -18,7 +18,11 @@ public sealed partial class SettingsWindow
         new("Layout","Position & size","Dock","Place the dock on a screen edge or move it freely.","position posisi pindah atas bawah kanan kiri monitor size resize ukuran"),
         new("Visibility","Show & hide","Dock","Choose when the dock hides, tucks away or shows a preview.","hide show tuck sembunyi tutup youtube fullscreen maximized hover preview",new[]{"Automatic tucking","Hide exceptions","Manual tuck shortcut","Hide or show the island","Automatic activity"}),
         new("Controls","Controls","Dock","Set mouse gestures, hover behavior and keyboard shortcuts.","mouse keyboard shortcut hotkey swipe scroll gesture klik tombol"),
-        new("Content","Widgets & tools","Features","Turn widgets on or off, reorder them and configure focus sessions.","widget tools urutan notes task timer focus stopwatch pomodoro"),
+        new("Widgets","Widgets","Dock","All dock features in one place.","widgets features plugins modules notes tasks timer music weather"),
+        new("Content","Widget selection","Features","Turn widgets on or off, reorder them and configure focus sessions.","widget tools urutan notes task timer focus stopwatch pomodoro"),
+        new("Notes","Notes","Features","Write a quick draft and keep saved notes in your local library.","notes note saved draft library заметки записи черновик"),
+        new("Tasks","Tasks","Features","Create tasks and track what is done.","tasks todo checklist задачи список дела"),
+        new("Timers","Timers & stopwatch","Features","Set focus sessions and use timers and the stopwatch.","timer stopwatch focus pomodoro таймер секундомер",new[]{"Timer","Focus sessions","Stopwatch"}),
         new("Audio","Music & sound","Features","Customize music controls, lyrics and the audio visualizer.","music spotify volume musik suara waveform spectrum lirik lyrics audio microphone"),
         new("Clipboard","Clipboard","Features","Control whether copied text and images are saved on this device.","clipboard salin copy paste capture history riwayat gambar",new[]{"Clipboard history"}),
         new("Weather","Weather","Features","Choose your city and see the weather in Celsius or Fahrenheit.","weather cuaca kota city temperature suhu rain hujan"),
@@ -39,7 +43,7 @@ public sealed partial class SettingsWindow
     private void FilterSettingsCategory(string id)
     {
         var definition=Category(id);
-        var excluded=id switch{"Content"=>ShowAllSettings?new[]{"Clipboard history"}:Array.Empty<string>(),"Application"=>Category("Notifications").Sections!,"Controls"=>Category("Visibility").Sections!,_=>Array.Empty<string>()};
+        var excluded=id switch{"Content"=>new[]{"Clipboard history","Focus sessions","Stopwatch"},"Application"=>Category("Notifications").Sections!,"Controls"=>Category("Visibility").Sections!,_=>Array.Empty<string>()};
         foreach(var section in page.Children.OfType<Border>().Where(b=>b.Tag is string).ToArray())
         {
             string key=(string)section.Tag;

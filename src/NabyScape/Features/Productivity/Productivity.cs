@@ -19,6 +19,14 @@ public sealed class TaskItem
     public bool Done { get; set; }
 }
 
+public sealed class NoteItem
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Text { get; set; } = "";
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    [JsonIgnore] public string Label => Text.Replace('\r',' ').Replace('\n',' ').Trim() is var text && text.Length>90 ? text[..90]+"…" : text;
+}
+
 public sealed class ShelfItem
 {
     public string Path { get; set; } = "";
@@ -40,6 +48,7 @@ public sealed class ClipItem
 public sealed class ProductivityData
 {
     public string Note { get; set; } = "";
+    public List<NoteItem> Notes { get; set; } = new();
     public List<TaskItem> Tasks { get; set; } = new();
     public List<ShelfItem> Shelf { get; set; } = new();
     public List<ClipItem> Clips { get; set; } = new();
@@ -48,6 +57,8 @@ public sealed class ProductivityData
 /// <summary>UI-thread service. Clipboard capture is opt-in on each process start and notification-driven.</summary>
 public sealed class ProductivityService : IDisposable
 {
+    public const int MaxSavedNotes=100;
+    public const int MaxNoteLength=50000;
     private const int MaxImageBytes=10*1024*1024;
     private readonly Store _store;
     private readonly Action<Exception> _log;
@@ -65,6 +76,7 @@ public sealed class ProductivityService : IDisposable
     private bool _paused;
     private readonly uint[] _excludedFormats;
     public event Action? Changed;
+    public List<NoteItem> Notes { get; } = new();
     public List<TaskItem> Tasks { get; } = new();
     public List<ShelfItem> Shelf { get; } = new();
     public List<ClipItem> Clips { get; } = new();
@@ -91,7 +103,7 @@ public sealed class ProductivityService : IDisposable
         _excludedFormats=nativeClipboard ? new[]{RegisterClipboardFormat("ExcludeClipboardContentFromMonitorProcessing"),RegisterClipboardFormat("CanIncludeInClipboardHistory"),RegisterClipboardFormat("CanUploadToCloudClipboard")} : Array.Empty<uint>();
         var data=store.Load<ProductivityData>("productivity");
         _note=Bound(data.Note,50000);
-        Tasks.AddRange(data.Tasks ?? new()); Shelf.AddRange(data.Shelf ?? new()); Clips.AddRange(data.Clips ?? new());
+        Notes.AddRange(data.Notes ?? new());Tasks.AddRange(data.Tasks ?? new()); Shelf.AddRange(data.Shelf ?? new()); Clips.AddRange(data.Clips ?? new());
         Normalize();
         PurgeOrphanImages();
     }
@@ -99,8 +111,61 @@ public sealed class ProductivityService : IDisposable
     public bool Save()
     {
         if(_disposed)return false;
-        try { Normalize(); _store.Save("productivity",new ProductivityData{Note=_note,Tasks=Tasks,Shelf=Shelf,Clips=Clips}); return true; }
+        try { Normalize(); _store.Save("productivity",new ProductivityData{Note=_note,Notes=Notes,Tasks=Tasks,Shelf=Shelf,Clips=Clips});LastError=null;return true; }
         catch(Exception ex) { ReportError(ex); return false; }
+    }
+
+    // Saving the quick draft never clears it. Identical snapshots reuse their library item.
+    public bool SaveDraftToLibrary()
+    {
+        if(_disposed || string.IsNullOrWhiteSpace(_note))return false;
+        if(Notes.Any(n=>n.Text==_note))return Save();
+        if(Notes.Count>=MaxSavedNotes)return false;
+        var item=new NoteItem{Text=_note};Notes.Insert(0,item);
+        if(!Save()){Notes.Remove(item);return false;}
+        Changed?.Invoke();return true;
+    }
+    public bool UpdateNote(string id,string text)
+    {
+        if(_disposed || string.IsNullOrWhiteSpace(text))return false;
+        var item=Notes.FirstOrDefault(n=>n.Id==id);if(item==null)return false;
+        string next=Bound(text,MaxNoteLength);if(item.Text==next)return Save();
+        var previous=(item.Text,item.UpdatedAt);item.Text=next;item.UpdatedAt=DateTimeOffset.UtcNow;
+        if(!Save()){(item.Text,item.UpdatedAt)=previous;return false;}
+        Changed?.Invoke();return true;
+    }
+    public bool RemoveNote(string id)
+    {
+        if(_disposed)return false;
+        int index=Notes.FindIndex(n=>n.Id==id);if(index<0)return false;
+        var item=Notes[index];Notes.RemoveAt(index);
+        if(!Save()){Notes.Insert(index,item);return false;}
+        Changed?.Invoke();return true;
+    }
+    // Persist the outgoing draft and replacement together before notifying any editor.
+    // Capacity and disk failures leave the current draft and library unchanged.
+    public bool OpenNoteInDraft(string id)
+    {
+        if(_disposed)return false;
+        var item=Notes.FirstOrDefault(n=>n.Id==id);if(item==null)return false;
+        NoteItem? archive=null;
+        if(!string.IsNullOrWhiteSpace(_note) && !Notes.Any(n=>n.Text==_note))
+        {
+            if(Notes.Count>=MaxSavedNotes)return false;
+            archive=new(){Text=_note};Notes.Insert(0,archive);
+        }
+        string previous=_note;_note=item.Text;
+        if(!Save()){_note=previous;if(archive!=null)Notes.Remove(archive);return false;}
+        Changed?.Invoke();return true;
+    }
+    public bool SetTaskDone(string id,bool done)
+    {
+        if(_disposed)return false;
+        var task=Tasks.FirstOrDefault(t=>t.Id==id);if(task==null)return false;
+        if(task.Done==done)return true;
+        bool previous=task.Done;task.Done=done;
+        if(!Save()){task.Done=previous;return false;}
+        Changed?.Invoke();return true;
     }
 
     public bool AddTask(string text)
@@ -315,6 +380,14 @@ public sealed class ProductivityService : IDisposable
     private void Normalize()
     {
         _note=Bound(_note,50000);
+        var notes=Notes.Where(n=>n!=null && !string.IsNullOrWhiteSpace(n.Text)).Take(MaxSavedNotes).ToList();
+        var noteIds=new HashSet<string>(StringComparer.Ordinal);
+        foreach(var note in notes)
+        {
+            if(string.IsNullOrWhiteSpace(note.Id) || note.Id.Length>128 || !noteIds.Add(note.Id)){note.Id=Guid.NewGuid().ToString("N");noteIds.Add(note.Id);}
+            note.Text=Bound(note.Text,MaxNoteLength);if(note.UpdatedAt==default)note.UpdatedAt=DateTimeOffset.UtcNow;
+        }
+        Notes.Clear();Notes.AddRange(notes);
         var tasks=Tasks.Where(t=>t!=null && !string.IsNullOrWhiteSpace(t.Text)).Take(100).ToList();
         var ids=new HashSet<string>(StringComparer.Ordinal);
         foreach(var task in tasks) { if(string.IsNullOrWhiteSpace(task.Id) || !ids.Add(task.Id)) { task.Id=Guid.NewGuid().ToString("N"); ids.Add(task.Id); } task.Text=Bound(task.Text,20000); }

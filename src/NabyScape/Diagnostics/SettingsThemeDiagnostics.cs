@@ -22,8 +22,9 @@ internal static class SettingsThemeDiagnostics
             var shared=Tree(window).OfType<Expander>().Single(e=>UI.Identity(e)=="Settings live preview");
             var advanced=Tree(shared).OfType<Expander>().Single(e=>UI.Identity(e)=="Preview advanced options");
             check("Preview advanced controls start collapsed",!advanced.IsExpanded);
+            check("Widget settings start in one collapsed group",!Tree(window).OfType<Expander>().Single(e=>UI.Identity(e)=="Widget settings group").IsExpanded);
             shared.IsExpanded=true;await Task.Delay(60);
-            check("Closed preview leaves room for settings",((FrameworkElement)shared.Content).ActualHeight<180);
+            check("Closed preview leaves room for settings",((FrameworkElement)shared.Content).ActualHeight<260);
             Tree(window).OfType<Button>().First(b=>UI.Identity(b)=="Preview Panel").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             advanced.IsExpanded=true;await Task.Delay(60);
             var contentChoice=Tree(shared).OfType<ComboBox>().Single();contentChoice.SelectedItem="Timer";
@@ -63,7 +64,7 @@ internal static class SettingsThemeDiagnostics
             foreach(string theme in new[]{"Light","Dark"})
             {
                 app.Settings.WindowTheme=theme;window.ApplyWindowAppearance();
-                foreach(string category in new[]{"Home","Layout","Launch","Visibility","Audio","Notifications","Application","AI","Weather"})
+                foreach(string category in new[]{"Home","Widgets","Notes","Tasks","Timers","Layout","Launch","Visibility","Audio","Notifications","Application","AI","Weather"})
                 {
                     window.OpenCategory(category);await Task.Delay(60);
                     var primaryButtons=Tree(window).OfType<Button>().Where(b=>(bool)b.GetValue(UI.PrimaryActionProperty)).ToArray();
@@ -71,10 +72,12 @@ internal static class SettingsThemeDiagnostics
                     Save(window,Path.Combine(directory,theme+"-"+category+".png"));
                 }
                 window.OpenCategory("Appearance");shared.IsExpanded=true;contentChoice.SelectedItem="Music";
+                window.UpdateLayout();await Task.Delay(60);double stageHeight=((FrameworkElement)shared.Content).ActualHeight;
                 foreach(string mode in new[]{"Closed","Hover","Panel"})
                 {
                     Tree(shared).OfType<Button>().First(b=>UI.Identity(b)=="Preview "+mode).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(450);
                     check(theme+" compact "+mode+" preview fits above settings",((FrameworkElement)shared.Content).ActualHeight<260 && !contentChoice.IsVisible);
+                    check(theme+" "+mode+" preview keeps fixed outer height",Math.Abs(((FrameworkElement)shared.Content).ActualHeight-stageHeight)<1);
                     Save(window,Path.Combine(directory,theme+"-compact-"+mode+".png"));
                 }
                 window.Width=600;await Task.Delay(60);Save(window,Path.Combine(directory,theme+"-compact-narrow.png"));
@@ -86,6 +89,37 @@ internal static class SettingsThemeDiagnostics
                 check(theme+" minimum width retains both choices",Tree(window).OfType<Button>().Where(b=>UI.Identity(b) is "Light theme" or "Dark theme").All(b=>b.ActualWidth>100));
                 window.Width=1100;window.Height=900;
             }
+            window.Width=1100;window.Height=780;window.OpenCategory("Widgets");await Task.Delay(80);
+            var group=Tree(window).OfType<Expander>().Single(e=>UI.Identity(e)=="Widget settings group");
+            check("Widget navigation opens when entering its overview",group.IsExpanded);
+            var searchField=Tree(window).OfType<TextBox>().Single(t=>UI.Identity(t)=="Search settings");
+            var searchOrigin=searchField.TransformToAncestor(window).Transform(new Point());
+            check("Search is inside the draggable window caption",searchOrigin.Y<58 && searchOrigin.X>300);
+            check("Caption search is an input area rather than a drag area",Hit(searchOrigin.X+20,searchOrigin.Y+14)==new IntPtr(1));
+            searchField.Text="заметки";await Task.Delay(70);Save(window,Path.Combine(directory,"caption-search.png"));
+            check("Search finds nested notes settings",Tree(window).OfType<Button>().Any(b=>UI.Identity(b).Contains(Localization.Text("Notes")) && b.IsVisible));searchField.Clear();
+            window.OpenCategory("Notes");await Task.Delay(80);
+            var draft=Tree(window).OfType<TextBox>().Single(t=>UI.Identity(t)=="Quick draft");draft.Text="Заметка для проверки библиотеки";
+            Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Save to library").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(80);
+            check("Notes page saves a draft in the persistent library",app.Productivity.Notes.Any(n=>n.Text==draft.Text) && app.Store.Load<ProductivityData>("productivity").Notes.Any(n=>n.Text==draft.Text));
+            Save(window,Path.Combine(directory,"notes-library.png"));
+            window.OpenCategory("Tasks");await Task.Delay(60);
+            var taskInput=Tree(window).OfType<TextBox>().Single(t=>UI.Identity(t)=="New task");taskInput.Text="Проверить библиотеку заметок";
+            Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Add task").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(60);
+            var task=app.Productivity.Tasks.Last(t=>t.Text=="Проверить библиотеку заметок");
+            var taskCheck=Tree(window).OfType<CheckBox>().Single(c=>UI.Identity(c)==task.Text);taskCheck.IsChecked=true;taskCheck.RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
+            check("Tasks page completion survives a store reload",app.Store.Load<ProductivityData>("productivity").Tasks.Any(t=>t.Id==task.Id && t.Done));Save(window,Path.Combine(directory,"tasks-list.png"));
+            window.OpenCategory("Home");await Task.Delay(60);
+            System.Windows.SystemCommands.MaximizeWindow(window);await Task.Delay(250);window.UpdateLayout();
+            var outer=(Border)typeof(SettingsWindow).GetField("windowFrame",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)!;
+            check("Maximized settings have square corners and no inner frame gap",window.WindowState==WindowState.Maximized && outer.CornerRadius==new CornerRadius(0) && ((Grid)outer.Child).Margin==new Thickness(0));
+            var hwnd=new System.Windows.Interop.WindowInteropHelper(window).Handle;var work=System.Windows.Forms.Screen.FromHandle(hwnd).WorkingArea;
+            Native.GetWindowRect(hwnd,out var actualBounds);
+            check("Maximized settings fit the monitor working area",Math.Abs(actualBounds.Left-work.Left)<=1 && Math.Abs(actualBounds.Top-work.Top)<=1 && Math.Abs(actualBounds.Right-work.Right)<=1 && Math.Abs(actualBounds.Bottom-work.Bottom)<=1);
+            check("Wide settings use a wider centered form",Tree(window).OfType<StackPanel>().Any(p=>p.HorizontalAlignment==HorizontalAlignment.Center && p.ActualWidth>1000));
+            Save(window,Path.Combine(directory,"settings-maximized.png"));
+            System.Windows.SystemCommands.RestoreWindow(window);await Task.Delay(150);
+            check("Restoring settings restores the rounded outline",window.WindowState==WindowState.Normal && outer.CornerRadius.TopLeft>0);
             var restored=app.Store.Load<Settings>("settings");
             check("Theme change saves to the isolated profile",restored.WindowTheme=="Light");
             window.Width=1100;window.Height=780;window.OpenCategory("Appearance");await Task.Delay(60);

@@ -19,7 +19,8 @@ public sealed partial class SettingsWindow
     private static string[] CategorySections(string id)=>Category(id).Sections??(id switch
     {
         "Layout"=>new[]{"Display","Dock placement","Move & resize","Closed island","Open panel","Hover preview","Layout profile"},
-        "Content"=>new[]{"Feature usage","Enabled widgets & order","Individual tools","Hover pages","Focus sessions","Stopwatch"},
+        "Content"=>new[]{"Feature usage","Enabled widgets & order","Individual tools","Hover pages"},
+        "Notes"=>new[]{"Quick draft","Saved notes"},"Tasks"=>new[]{"Tasks"},
         "Controls"=>new[]{"Hover & swipe","Panel navigation","Drag to Island","Detachable previews","Closed cover gestures","Notch gestures","Global hotkey"},
         "Audio"=>new[]{"Visualizer","Lyrics","Closed media display","Volume mixer","Waveform source","Live signal","Live feedback","Audio behavior","Header wheel"},
         "System"=>new[]{"Clock","Monitor details"},"Launch"=>new[]{"Launch display","Shortcuts"},"AI"=>new[]{"AI companion"},
@@ -85,8 +86,8 @@ public sealed partial class SettingsWindow
         var inputHost=new Grid();inputHost.Children.Add(settingsSearch);var hint=UI.Caption("Search  ·  Ctrl+F",12,UI.Muted);hint.IsHitTestVisible=false;inputHost.Children.Add(hint);row.Children.Add(inputHost);
         var field=new Border{Child=row,Background=SettingsTheme.Card,BorderBrush=SettingsTheme.Line,BorderThickness=new(1),CornerRadius=new(10),Padding=new(12,0,6,0),Margin=new(0)};settingsSearchHeader=field;fieldHost.Child=field;
         var resultsScroll=UI.Scroll(settingsResults);resultsScroll.HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled;
-        searchResultsHost=new Border{Child=resultsScroll,Background=SettingsTheme.CardRaised,BorderBrush=SettingsTheme.Line,BorderThickness=new(1),CornerRadius=new(14),Padding=new(8),Margin=new(36,48,36,10),VerticalAlignment=VerticalAlignment.Top,Visibility=Visibility.Collapsed,Effect=new System.Windows.Media.Effects.DropShadowEffect{BlurRadius=28,ShadowDepth=8,Opacity=.5,Color=Colors.Black}};UI.LocalizedName(searchResultsHost,"Settings search results");Grid.SetRow(searchResultsHost,0);Panel.SetZIndex(searchResultsHost,40);main.Children.Add(searchResultsHost);
-        workspace.SizeChanged+=(_,_)=>resultsScroll.MaxHeight=Math.Max(80,Math.Min(430,workspace.ActualHeight-28));
+        searchResultsHost=new Border{Child=resultsScroll,Background=SettingsTheme.CardRaised,BorderBrush=SettingsTheme.Line,BorderThickness=new(1),CornerRadius=new(14),Padding=new(8),Margin=new(16,4,156,10),HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Top,Visibility=Visibility.Collapsed,Effect=new System.Windows.Media.Effects.DropShadowEffect{BlurRadius=28,ShadowDepth=8,Opacity=.5,Color=Colors.Black}};UI.LocalizedName(searchResultsHost,"Settings search results");Grid.SetRow(searchResultsHost,0);Panel.SetZIndex(searchResultsHost,40);main.Children.Add(searchResultsHost);
+        workspace.SizeChanged+=(_,_)=>{resultsScroll.MaxHeight=Math.Max(80,Math.Min(430,workspace.ActualHeight-28));searchResultsHost.Width=Math.Max(180,Math.Min(500,workspace.ActualWidth-188));};
         settingsSearch.TextChanged+=(_,_)=>{bool empty=string.IsNullOrWhiteSpace(settingsSearch.Text);hint.Visibility=empty && !settingsSearch.IsKeyboardFocusWithin?Visibility.Visible:Visibility.Collapsed;clear.Visibility=empty?Visibility.Collapsed:Visibility.Visible;ShowSettingsSearch();};
         settingsSearch.GotKeyboardFocus+=(_,_)=>{hint.Visibility=Visibility.Collapsed;field.SetResourceReference(Border.BorderBrushProperty,"Accent");ShowSettingsSearch();};
         settingsSearch.LostKeyboardFocus+=(_,_)=>{hint.Visibility=string.IsNullOrWhiteSpace(settingsSearch.Text)?Visibility.Visible:Visibility.Collapsed;field.SetResourceReference(Border.BorderBrushProperty,"SettingsLine");};

@@ -117,6 +117,10 @@ public sealed partial class OverlayWindow
             var meta=UI.Text(Localization.Text("Saved on this device"),10,UI.Muted);meta.Margin=new(2,9,0,2);write.Children.Add(meta);
             void Placeholder()=>placeholder.Visibility=note.Text.Length==0?Visibility.Visible:Visibility.Collapsed;Placeholder();
             note.TextChanged+=(_,_)=>{if(!syncingNote)p.Note=note.Text;Placeholder();noteSave.Stop();noteSave.Start();};
+            var actions=new WrapPanel{Margin=new(0,8,0,0)};
+            var save=UI.CaptionButton("Save to library",()=>{FlushNotes();meta.Text=Localization.Text(p.SaveDraftToLibrary()?"Note saved to your library. The quick draft is unchanged.":"Could not save this note. Check the library capacity or try again.");});
+            save.IsEnabled=!string.IsNullOrWhiteSpace(p.Note);note.TextChanged+=(_,_)=>save.IsEnabled=!string.IsNullOrWhiteSpace(note.Text);actions.Children.Add(save);
+            actions.Children.Add(UI.CaptionButton("Open saved notes",()=>{FlushNotes();app.ShowSettings("Notes");}));write.Children.Add(actions);
             return;
         }
     }

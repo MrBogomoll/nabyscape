@@ -18,7 +18,7 @@ public sealed partial class SettingsWindow
         ["Layout"]=new[]{"Display","Dock placement","Move & resize","Closed island"},
         ["Visibility"]=new[]{"Automatic tucking","Hide exceptions","Hide or show the island"},
         ["Controls"]=new[]{"Notch gestures","Global hotkey"},
-        ["Content"]=new[]{"Enabled widgets & order","Focus sessions","Clipboard history"},
+        ["Content"]=new[]{"Enabled widgets & order","Feature usage","Hover pages"},
         ["Audio"]=new[]{"Closed media display","Lyrics"},
         ["Notifications"]=new[]{"Notifications","Other apps"},
         ["Application"]=new[]{"Language & accessibility","Behavior","Updates","Local storage","About NabyScape"},
@@ -26,9 +26,10 @@ public sealed partial class SettingsWindow
         ["Launch"]=new[]{"Shortcuts"}
     };
     // Detailed pages that only appear in the sidebar after "Show all settings".
-    private static readonly HashSet<string> DetailedCategories=new(){"Motion","Controls","Clipboard","System"};
+    private static readonly HashSet<string> DetailedCategories=new(){"Motion","Controls"};
     private readonly Dictionary<string,TextBlock> navigationGroups=new();
     private CheckBox? showAllSwitch;
+    private Expander? widgetNavigation;
     private bool revealAllSettings,revealAllNext;
     private bool ShowAllSettings=>app.Settings.SettingsShowAll || revealAllSettings;
     internal static bool EssentialSetting(string category,string section)=>!DetailedCategories.Contains(category) && (section.Length==0 || !EssentialSections.TryGetValue(category,out var keep) || keep.Contains(section));
@@ -36,16 +37,17 @@ public sealed partial class SettingsWindow
 
     private void BuildNavigation(StackPanel navigation)
     {
-        string lastGroup="";
+        var widgetChildren=new StackPanel{Margin=new(10,0,0,0)};
         foreach(var category in SettingsCategories)
         {
-            if(category.Group!=lastGroup)
+            if(category.Id=="Widgets")
             {
-                lastGroup=category.Group;
-                // "Start here" stands alone at the top; a "Settings" label above it repeats the window title.
-                if(category.Group!="Settings"){var label=UI.Caption(category.Group,10,UI.Muted);label.Margin=new(14,10,0,4);label.FontFamily=SettingsTheme.Display;label.FontWeight=FontWeights.Bold;label.Text=label.Text.ToUpperInvariant();label.Foreground=SettingsTheme.Quiet;label.Opacity=.75;label.Visibility=Visibility.Collapsed;navigation.Children.Add(label);navigationGroups[category.Group]=label;}
+                widgetNavigation=new Expander{Header=NavigationContent("nav-tools",Localization.Text("Widgets")),Content=widgetChildren,IsExpanded=false,Margin=new(10,8,0,8)};
+                UI.LocalizedName(widgetNavigation,"Widget settings group");ControlFeedback.SetEnabled(widgetNavigation,false);navigation.Children.Add(widgetNavigation);
             }
-            var item=category;var button=UI.CaptionButton(item.Title,()=>Navigate(item.Id));button.HorizontalContentAlignment=HorizontalAlignment.Left;button.Content=NavigationContent(CategoryIcon(item.Id),Localization.Text(item.Title));button.Padding=new(16,11,16,11);button.Margin=new(0,3,0,3);button.Tag=new CornerRadius(24);button.FontSize=13;button.MinHeight=app.Settings.WindowCompact?34:46;button.ToolTip=Localization.Text(item.Description);navigationButtons[item.Id]=button;navigation.Children.Add(button);
+            var item=category;string title=item.Id=="Widgets"?"Widget overview":item.Title;
+            var button=UI.CaptionButton(title,()=>Navigate(item.Id));button.HorizontalContentAlignment=HorizontalAlignment.Left;button.Content=NavigationContent(CategoryIcon(item.Id),Localization.Text(title));button.Padding=new(16,11,16,11);button.Margin=new(0,3,0,3);button.Tag=new CornerRadius(24);button.FontSize=13;button.MinHeight=app.Settings.WindowCompact?34:46;button.ToolTip=Localization.Text(item.Description);navigationButtons[item.Id]=button;
+            if(item.Id=="Widgets" || item.Group=="Features")widgetChildren.Children.Add(button);else navigation.Children.Add(button);
         }
         var label2=new StackPanel();label2.Children.Add(UI.Caption("Show all settings",12));var hint=UI.Caption("Every option and its help text",10,UI.Muted);hint.Margin=new(0,3,0,0);label2.Children.Add(hint);
         // Lives in the sidebar footer (see SidebarFooter).
@@ -56,12 +58,13 @@ public sealed partial class SettingsWindow
     private void RefreshNavigationMode()
     {
         bool all=app.Settings.SettingsShowAll;
+        if(widgetNavigation!=null && (current=="Widgets" || Category(current).Group=="Features"))widgetNavigation.IsExpanded=true;
         foreach(var category in SettingsCategories)if(navigationButtons.TryGetValue(category.Id,out var button))button.Visibility=all || !DetailedCategories.Contains(category.Id)?Visibility.Visible:Visibility.Collapsed;
         foreach(var group in navigationGroups)group.Value.Visibility=Visibility.Collapsed;
         if(showAllSwitch!=null && showAllSwitch.IsChecked!=all)showAllSwitch.IsChecked=all;
         if(categorySelector!=null)
         {
-            var titles=SettingsCategories.Where(c=>all || !DetailedCategories.Contains(c.Id) || c.Id==current).Select(c=>Localization.Text(c.Title)).ToArray();
+            var titles=SettingsCategories.Where(c=>(all || !DetailedCategories.Contains(c.Id) || c.Id==current) && (c.Group!="Features" || current=="Widgets" || Category(current).Group=="Features")).Select(c=>Localization.Text(c.Title)).ToArray();
             if(!(categorySelector.ItemsSource is string[] old && old.SequenceEqual(titles))){categorySelector.ItemsSource=titles;categorySelector.SelectedItem=CategoryTitle(current);}
         }
     }

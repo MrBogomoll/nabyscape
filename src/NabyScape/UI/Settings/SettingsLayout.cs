@@ -15,7 +15,7 @@ public sealed partial class SettingsWindow
     private static string CategoryIcon(string id)=>id switch
     {
         "Home"=>"nav-launch","Appearance"=>"image","Ambience"=>"sun","Motion"=>"nav-focus","Layout"=>"screen","Visibility"=>"eye",
-        "Controls"=>"mouse","Content"=>"nav-tools","Audio"=>"nav-media","Clipboard"=>"clipboard","Weather"=>"weather","System"=>"nav-status",
+        "Controls"=>"mouse","Widgets" or "Content"=>"nav-tools","Notes"=>"notes","Tasks"=>"notes","Timers"=>"nav-focus","Audio"=>"nav-media","Clipboard"=>"clipboard","Weather"=>"weather","System"=>"nav-status",
         "Launch"=>"link","AI"=>"chat","Notifications"=>"bell",_=>"nav-settings"
     };
     // Plain-language purpose of each section, shown under its title.
@@ -56,7 +56,7 @@ public sealed partial class SettingsWindow
         var glyph=Icons.Create(icon,21);glyph.Margin=new(0,0,11,0);glyph.VerticalAlignment=VerticalAlignment.Center;Grid.SetColumn(glyph,1);
         var shapes=glyph is Viewbox {Child:Canvas canvas}?canvas.Children.OfType<Shape>():glyph is Shape single?new[]{single}:Enumerable.Empty<Shape>();
         foreach(var shape in shapes)
-            BindingOperations.SetBinding(shape,shape.Stroke!=null?Shape.StrokeProperty:Shape.FillProperty,new Binding("Foreground"){RelativeSource=new RelativeSource(RelativeSourceMode.FindAncestor,typeof(Button),1)});
+            BindingOperations.SetBinding(shape,shape.Stroke!=null?Shape.StrokeProperty:Shape.FillProperty,new Binding("Foreground"){RelativeSource=new RelativeSource(RelativeSourceMode.FindAncestor,typeof(System.Windows.Controls.Primitives.ButtonBase),1)});
         row.Children.Add(glyph);
         var text=UI.Text(title,12);text.TextWrapping=TextWrapping.Wrap;text.TextTrimming=TextTrimming.None;text.VerticalAlignment=VerticalAlignment.Center;text.ClearValue(TextBlock.ForegroundProperty);Grid.SetColumn(text,2);row.Children.Add(text);
         return row;

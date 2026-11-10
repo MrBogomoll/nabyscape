@@ -60,6 +60,72 @@ public static class ProductivityTests
             for(int i=1;i<100;i++)Assert(service.AddTask("Task "+i));
             Assert(!service.AddTask("overflow") && service.Tasks.Count==100);
         });
+        Check("Productivity: saving a draft archives it once and saved edits survive restart",root=>
+        {
+            string id;
+            using(var service=Service(root))
+            {
+                service.Note="  Original thought\nsecond line  ";
+                Assert(service.SaveDraftToLibrary() && service.Note=="  Original thought\nsecond line  ");
+                id=service.Notes.Single().Id;
+                Assert(service.SaveDraftToLibrary() && service.Notes.Count==1);
+                Assert(service.UpdateNote(id,"Revised thought") && !service.UpdateNote(id," "));
+            }
+            using var restored=Service(root);
+            Assert(restored.Note=="  Original thought\nsecond line  " && restored.Notes.Single().Id==id && restored.Notes[0].Text=="Revised thought");
+            Assert(restored.RemoveNote(id) && restored.Notes.Count==0 && !restored.RemoveNote(id));
+        });
+        Check("Productivity: opening a saved note preserves the previous draft across restart",root=>
+        {
+            using(var service=Service(root))
+            {
+                service.Note="Saved text";Assert(service.SaveDraftToLibrary());var id=service.Notes.Single().Id;
+                service.Note="Unsaved replacement";Assert(service.OpenNoteInDraft(id));
+                Assert(service.Note=="Saved text" && service.Notes.Any(n=>n.Text=="Unsaved replacement"));
+                Assert(service.OpenNoteInDraft(id) && service.Notes.Count==2 && !service.OpenNoteInDraft("missing"));
+            }
+            using var restored=Service(root);
+            Assert(restored.Note=="Saved text" && restored.Notes.Any(n=>n.Text=="Unsaved replacement"));
+        });
+        Check("Productivity: full library refuses replacement without losing the draft",root=>
+        {
+            using var service=Service(root);
+            for(int i=0;i<ProductivityService.MaxSavedNotes;i++){service.Note="Note "+i;Assert(service.SaveDraftToLibrary());}
+            var first=service.Notes[0];service.Note="New thought outside the library";
+            Assert(!service.SaveDraftToLibrary() && !service.OpenNoteInDraft(first.Id));
+            Assert(service.Note=="New thought outside the library" && service.Notes.Count==ProductivityService.MaxSavedNotes);
+            service.Note=first.Text;Assert(service.SaveDraftToLibrary() && service.OpenNoteInDraft(first.Id));
+        });
+        Check("Productivity: saved notes normalize nulls duplicate IDs and oversized text",root=>
+        {
+            var store=new Store(root);
+            store.Save("productivity",new ProductivityData{Note="legacy draft",Notes=new(){null!,new(){Id="same",Text=new string('x',51000)},new(){Id="same",Text="second"},new(){Id=null!,Text="third"},new(){Text=" "}}});
+            using var service=Service(root);
+            Assert(service.Note=="legacy draft" && service.Notes.Count==3 && service.Notes[0].Text.Length==50000);
+            Assert(service.Notes.Select(n=>n.Id).Distinct().Count()==3 && service.Notes.All(n=>!string.IsNullOrWhiteSpace(n.Id)));
+            Assert(service.UpdateNote(service.Notes[1].Id,new string('y',51000)) && service.Notes.Single(n=>n.Text[0]=='y').Text.Length==50000);
+        });
+        Check("Productivity: saved-note mutations roll back when storage is unavailable",root=>
+        {
+            using var service=Service(root);service.Note="Saved";Assert(service.SaveDraftToLibrary());var note=service.Notes.Single();
+            service.Note="Keep draft";
+            using var locked=new FileStream(Path.Combine(root,"productivity.json"),FileMode.Open,FileAccess.Read,FileShare.Read);
+            Assert(!service.OpenNoteInDraft(note.Id) && service.Note=="Keep draft" && service.Notes.Count==1);
+            Assert(!service.SaveDraftToLibrary() && service.Notes.Count==1);
+            Assert(!service.UpdateNote(note.Id,"Do not apply") && note.Text=="Saved");
+            Assert(!service.RemoveNote(note.Id) && service.Notes.Single().Id==note.Id);
+        });
+        Check("Productivity: task completion notifies shared views and persists",root=>
+        {
+            string id;
+            using(var service=Service(root))
+            {
+                Assert(service.AddTask("Shared task"));id=service.Tasks[0].Id;int changes=0;service.Changed+=()=>changes++;
+                Assert(service.SetTaskDone(id,true) && changes==1);
+                Assert(service.SetTaskDone(id,true) && changes==1 && !service.SetTaskDone("missing",true));
+            }
+            using var restored=Service(root);Assert(restored.Tasks.Single().Id==id && restored.Tasks[0].Done);
+        });
         Check("Productivity: shelf handles missing paths, deduplication and 40-file cap",root=>
         {
             using var service=Service(root);

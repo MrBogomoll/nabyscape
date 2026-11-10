@@ -23,7 +23,7 @@ public sealed partial class OverlayWindow
             row.SizeChanged+=(_,_)=>label.MaxWidth=Math.Max(80,row.ActualWidth-66);
             void Hover()=>Motion.Fade(frame,1,100);
             frame.MouseEnter+=(_,_)=>{frame.Background=UI.Brush("#0BFFFFFF");Hover();};frame.MouseLeave+=(_,_)=>frame.Background=Brushes.Transparent;
-            check.Click+=(_,_)=>{item.Done=check.IsChecked==true;label.TextDecorations=item.Done?TextDecorations.Strikethrough:null;label.Foreground=item.Done?UI.Muted:Brushes.White;Summary();utilityMutating=true;try{p.Save();}finally{utilityMutating=false;}};list.Children.Add(frame);
+            check.Click+=(_,_)=>{utilityMutating=true;try{if(!p.SetTaskDone(item.Id,check.IsChecked==true))check.IsChecked=item.Done;}finally{utilityMutating=false;}label.TextDecorations=item.Done?TextDecorations.Strikethrough:null;label.Foreground=item.Done?UI.Muted:Brushes.White;Summary();};list.Children.Add(frame);
         }
         if(p.Tasks.Count==0){var empty=UI.Caption("Add your first task below.",12,UI.Muted);empty.Margin=new(4,16,0,18);list.Children.Add(empty);}
         var input=UI.Input(Localization.Text("New task"),taskDraft);input.MaxLength=240;input.BorderThickness=new(0);input.Background=Brushes.Transparent;input.Margin=new(0);input.Padding=new(10,8,0,8);input.MinHeight=36;input.TextChanged+=(_,_)=>taskDraft=input.Text;

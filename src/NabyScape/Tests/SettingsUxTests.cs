@@ -117,6 +117,26 @@ internal static class SettingsUxTests
             var scaled=new System.Windows.Rect(1700,900,1100,780);
             Assert(right.Contains(SettingsWindow.FitWorkingArea(scaled,right,1.5)));
         });
+        test("Settings containment leaves native maximized and minimized placement untouched",()=>
+        {
+            foreach(var state in new[]{System.Windows.WindowState.Maximized,System.Windows.WindowState.Minimized})
+            foreach(bool interactive in new[]{false,true})
+            foreach(bool recovery in new[]{false,true})
+                Assert(!SettingsWindow.ShouldFitSettingsBounds(interactive,recovery,state));
+            Assert(SettingsWindow.ShouldFitSettingsBounds(false,false,System.Windows.WindowState.Normal));
+            Assert(!SettingsWindow.ShouldFitSettingsBounds(true,false,System.Windows.WindowState.Normal));
+            Assert(SettingsWindow.ShouldFitSettingsBounds(true,true,System.Windows.WindowState.Normal));
+        });
+        test("Maximized Settings uses monitor-relative work area with taskbars on any edge",()=>
+        {
+            foreach(var monitor in new[]{new System.Windows.Rect(0,0,3440,1440),new System.Windows.Rect(-3440,-1440,3440,1440),new System.Windows.Rect(1920,80,3440,1440)})
+            foreach(var inset in new[]{new System.Windows.Thickness(0,0,0,48),new System.Windows.Thickness(48,0,0,0),new System.Windows.Thickness(0,48,0,0),new System.Windows.Thickness(0,0,48,0)})
+            {
+                var work=new System.Windows.Rect(monitor.Left+inset.Left,monitor.Top+inset.Top,monitor.Width-inset.Left-inset.Right,monitor.Height-inset.Top-inset.Bottom);
+                var result=SettingsWindow.MaximizedWorkingBounds(monitor,work);
+                Assert(result==new System.Windows.Rect(inset.Left,inset.Top,work.Width,work.Height));
+            }
+        });
         test("Widget labels and caption have separate measured tile space",()=>
         {
             var settings=new Settings();foreach(var widget in settings.Widgets)widget.Enabled=true;

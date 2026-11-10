@@ -26,7 +26,7 @@ public sealed partial class SettingsWindow
         string key=$"{s.WindowTheme}/{s.WindowGlass}/{s.WindowEffects}/{s.WindowLargeCorners}/{s.WindowCompact}/{s.WindowHoverAccents}/{Accessibility.HighContrast}";
         if(key==appearanceKey)return;appearanceKey=key;
         var palette=SettingsPalette.Create(s);foreach(var resource in palette.Keys)windowPalette[resource]=palette[resource];
-        if(windowFrame!=null)windowFrame.CornerRadius=new(s.WindowLargeCorners?28:12);
+        if(windowFrame!=null)windowFrame.CornerRadius=new(WindowState==WindowState.Maximized?0:s.WindowLargeCorners?28:12);
         foreach(var entry in navigationButtons.Values)
         {
             entry.MinHeight=s.WindowCompact?34:46;
