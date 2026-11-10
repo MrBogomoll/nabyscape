@@ -30,5 +30,13 @@
   "Note title (optional)": "Заголовок (необязательно)",
   "Leave blank to use the first phrase.": "Оставьте пустым, чтобы заголовком стала первая фраза.",
   "Click to open this note": "Нажмите, чтобы открыть заметку",
-  "Click a card to open it. Choose a title inside, or leave it blank to use the first phrase.": "Нажмите на карточку, чтобы раскрыть заметку. Внутри можно задать заголовок или оставить поле пустым — тогда названием станет первая фраза."
+  "Click a card to open it. Choose a title inside, or leave it blank to use the first phrase.": "Нажмите на карточку, чтобы раскрыть заметку. Внутри можно задать заголовок или оставить поле пустым — тогда названием станет первая фраза.",
+  "Select note: {0}": "Выбрать заметку: {0}",
+  "Delete note: {0}": "Удалить заметку: {0}",
+  "Selected notes: {0}": "Выбрано: {0}",
+  "Delete selected notes": "Удалить выбранные",
+  "Delete notes": "Удалить заметки",
+  "Delete {0} selected notes? The quick draft will be kept.": "Удалить выбранные заметки ({0}) из библиотеки? Черновик останется на месте.",
+  "Notes deleted.": "Заметки удалены.",
+  "Could not delete notes. Try again.": "Не удалось удалить заметки. Попробуйте ещё раз."
 }

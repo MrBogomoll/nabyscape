@@ -145,6 +145,32 @@ internal static class SettingsThemeDiagnostics
             check("Narrow note cards use one column without clipping",Tree(window).OfType<Expander>().Where(e=>UI.Identity(e).StartsWith("Saved note card ")).All(e=>e.Parent is Border b && b.ActualWidth>400 && b.ActualWidth<580));Save(window,Path.Combine(directory,"notes-cards-narrow.png"));
             window.Width=1100;await Task.Delay(80);
             Save(window,Path.Combine(directory,"notes-library.png"));
+            var choices=Diagnostics.Descendants(window).OfType<CheckBox>().Where(c=>UI.Identity(c).StartsWith("Select note ")).ToArray();
+            var batchDelete=Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Delete selected notes");
+            void ToggleChoice(CheckBox choice)=>((System.Windows.Automation.Provider.IToggleProvider)new System.Windows.Automation.Peers.CheckBoxAutomationPeer(choice).GetPattern(System.Windows.Automation.Peers.PatternInterface.Toggle)).Toggle();
+            bool AllCollapsed()=>Tree(window).OfType<Expander>().Where(e=>UI.Identity(e).StartsWith("Saved note card ")).All(e=>!e.IsExpanded);
+            check("Collapsed notes expose selection marks and individual delete icons",choices.Length==app.Productivity.Notes.Count && choices.All(c=>c.IsVisible) && Diagnostics.Descendants(window).OfType<Button>().Count(b=>UI.Identity(b).StartsWith("Delete note ") && b.IsVisible)==choices.Length && !batchDelete.IsEnabled);
+            bool ReceivesClick(FrameworkElement control,Point inside){var target=window.InputHitTest(control.TransformToAncestor(window).Transform(inside)) as DependencyObject;return target!=null && (ReferenceEquals(control,target) || control.IsAncestorOf(target));}
+            check("Selection mark receives its own mouse clicks",ReceivesClick(choices[0],new Point(8,16)));
+            check("Card body receives mouse clicks independently of its controls",ReceivesClick(cardHeader,new Point(100,40)));
+            ToggleChoice(choices[0]);ToggleChoice(choices[1]);
+            check("Choosing notes enables group deletion without expanding cards",choices.Count(c=>c.IsChecked==true)==2 && batchDelete.IsEnabled && AllCollapsed());
+            foreach(string selectedTheme in new[]{"Light","Dark"}){app.Settings.WindowTheme=selectedTheme;window.ApplyWindowAppearance();await Task.Delay(60);Save(window,Path.Combine(directory,"notes-selected-"+selectedTheme+".png"));}
+            window.Width=600;await Task.Delay(80);Save(window,Path.Combine(directory,"notes-selected-narrow.png"));window.Width=1100;await Task.Delay(80);
+            var chosenIds=choices.Where(c=>c.IsChecked==true).Select(c=>UI.Identity(c)["Select note ".Length..]).ToArray();var beforeDelete=app.Productivity.Notes.Select(n=>n.Id).ToArray();string draftBefore=app.Productivity.Note,titleBefore=app.Productivity.NoteTitle;
+            check("Cancelling group deletion preserves notes and selection",ClickNoteDeletion(window,batchDelete,false,"Delete notes") && app.Productivity.Notes.Select(n=>n.Id).SequenceEqual(beforeDelete) && choices.Count(c=>c.IsChecked==true)==2 && AllCollapsed());
+            Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Clear selection").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            check("Clear selection disables deletion",choices.All(c=>c.IsChecked!=true) && !batchDelete.IsEnabled);
+            Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Select all").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            check("Select all checks every card without expanding",choices.All(c=>c.IsChecked==true) && AllCollapsed());
+            Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Clear selection").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));ToggleChoice(choices[0]);ToggleChoice(choices[1]);
+            using(var lockedNotes=new FileStream(Path.Combine(app.Store.DirectoryPath,"productivity.json"),FileMode.Open,FileAccess.Read,FileShare.Read))
+                check("Failed group deletion preserves all notes and selection for retry",ClickNoteDeletion(window,batchDelete,true,"Delete notes") && app.Productivity.Notes.Select(n=>n.Id).SequenceEqual(beforeDelete) && choices.Count(c=>c.IsChecked==true)==2 && batchDelete.IsEnabled);
+            check("Group deletion removes only chosen notes and keeps the draft",ClickNoteDeletion(window,batchDelete,true,"Delete notes") && app.Productivity.Notes.Select(n=>n.Id).SequenceEqual(beforeDelete.Where(id=>!chosenIds.Contains(id))) && app.Store.Load<ProductivityData>("productivity").Notes.All(n=>!chosenIds.Contains(n.Id)) && app.Productivity.Note==draftBefore && app.Productivity.NoteTitle==titleBefore && !batchDelete.IsEnabled);
+            var directDelete=Diagnostics.Descendants(window).OfType<Button>().First(b=>UI.Identity(b).StartsWith("Delete note "));string directId=UI.Identity(directDelete)["Delete note ".Length..];
+            check("Card trash is a separate mouse target",ReceivesClick(directDelete,new Point(16,16)));
+            check("Cancelling a card trash icon keeps the collapsed note",ClickNoteDeletion(window,directDelete,false,"Delete note") && app.Productivity.Notes.Any(n=>n.Id==directId) && AllCollapsed());
+            check("Card trash deletes without opening its editor",ClickNoteDeletion(window,directDelete,true,"Delete note") && !app.Productivity.Notes.Any(n=>n.Id==directId) && AllCollapsed());
             window.OpenCategory("Tasks");await Task.Delay(60);
             var taskInput=Tree(window).OfType<TextBox>().Single(t=>UI.Identity(t)=="New task");taskInput.Text="Проверить библиотеку заметок";
             Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Add task").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(60);
@@ -239,6 +265,27 @@ internal static class SettingsThemeDiagnostics
         element.UpdateLayout();var bitmap=new RenderTargetBitmap((int)element.ActualWidth,(int)element.ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(element);
         var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var stream=File.Create(path);encoder.Save(stream);
     }
+    // Answer only this isolated fixture's native confirmation; never target another process.
+    private static bool ClickNoteDeletion(Window owner,Button button,bool accept,string caption)
+    {
+        bool answered=false,defaultNo=false;
+        var timer=new System.Windows.Threading.DispatcherTimer{Interval=TimeSpan.FromMilliseconds(25)};
+        timer.Tick+=(_,_)=>
+        {
+            IntPtr dialog=IntPtr.Zero;
+            while((dialog=FindWindowEx(IntPtr.Zero,dialog,"#32770",Localization.Text(caption)))!=IntPtr.Zero)
+            {
+                GetWindowThreadProcessId(dialog,out uint pid);if(pid!=Environment.ProcessId || GetWindow(dialog,4)!=new System.Windows.Interop.WindowInteropHelper(owner).Handle)continue;
+                defaultNo=(GetWindowLong(GetDlgItem(dialog,7),-16)&0xF)==1;answered=true;timer.Stop();SendMessage(GetDlgItem(dialog,accept?6:7),0xF5,IntPtr.Zero,IntPtr.Zero);break;
+            }
+        };
+        timer.Start();try{button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));}finally{timer.Stop();}
+        return answered && defaultNo;
+    }
+    [DllImport("user32.dll",CharSet=CharSet.Unicode)] private static extern IntPtr FindWindowEx(IntPtr parent,IntPtr after,string className,string title);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint pid);
+    [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hwnd,uint command);
+    [DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr hwnd,int id);
     [DllImport("user32.dll",EntryPoint="GetWindowLongW")] private static extern int GetWindowLong(IntPtr hwnd,int index);
     [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hwnd,int message,IntPtr wparam,IntPtr lparam);
 }

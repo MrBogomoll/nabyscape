@@ -26,7 +26,18 @@ public sealed partial class SettingsWindow
         var draft=ProductivityEditor("Quick draft",service.Note,150);
         var feedback=UI.Caption("Draft saves automatically on this device.",11,UI.Muted);Accessibility.Live(feedback);
         var debounce=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(350)};bool syncing=false,subscribed=false;
-        var rows=new Dictionary<string,(Border Surface,Expander Card,Action Refresh,Func<bool> Flush)>();
+        var selected=new HashSet<string>(StringComparer.Ordinal);
+        var rows=new Dictionary<string,(Border Surface,Expander Card,Action Refresh,Func<bool> Flush,Action Stop)>();
+        Button? deleteSelected=null,selectAll=null,clearSelection=null;
+        var selectionStatus=UI.Caption("",11,UI.Muted);Accessibility.Live(selectionStatus);
+        void UpdateSelection()
+        {
+            foreach(var row in rows.Values)row.Refresh();
+            selectionStatus.Text=Localization.Format("Selected notes: {0}",selected.Count);
+            if(deleteSelected!=null){deleteSelected.Content=Localization.Text("Delete selected notes")+" ("+selected.Count+")";deleteSelected.IsEnabled=selected.Count>0;}
+            if(clearSelection!=null)clearSelection.IsEnabled=selected.Count>0;
+            if(selectAll!=null)selectAll.IsEnabled=service.Notes.Count>selected.Count;
+        }
         var library=new WrapPanel{Margin=new(-5,0,-5,0)};UI.LocalizedName(library,"Saved note cards");var count=UI.Caption("",11,UI.Muted);
         void ArrangeCards(){double width=library.ActualWidth>0?library.ActualWidth:Math.Max(240,page.Width);int columns=width>1050?3:width>=600?2:1;foreach(var row in rows.Values)row.Surface.Width=Math.Max(200,width/columns-10);}
         library.SizeChanged+=(_,_)=>ArrangeCards();
@@ -40,13 +51,30 @@ public sealed partial class SettingsWindow
         var draftSection=Section("Quick draft",UI.Caption("The same draft appears in the dock and detached notes. Save a copy to keep it in your library.",12,UI.Muted),UI.Caption("Note title (optional)",11,UI.Muted),draftTitle,draft,save,feedback);
         host.Children.Add(draftSection);
 
-        (Border Surface,Expander Card,Action Refresh,Func<bool> Flush) CreateRow(NoteItem item)
+        void DeleteChosen(IEnumerable<string> candidates)
+        {
+            var ids=candidates.Where(id=>rows.ContainsKey(id)).Distinct().ToArray();if(ids.Length==0)return;
+            string caption=Localization.Text(ids.Length==1?"Delete note":"Delete notes");
+            string prompt=ids.Length==1?Localization.Text("Delete this saved note? The quick draft will be kept."):Localization.Format("Delete {0} selected notes? The quick draft will be kept.",ids.Length);
+            if(MessageBox.Show(this,prompt,caption,MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
+            foreach(string id in ids)rows[id].Stop();
+            if(service.RemoveNotes(ids))State("Notes deleted.");
+            else{State("Could not save. Your text is still in the editor.");selectionStatus.Text=Localization.Text("Could not delete notes. Try again.");}
+        }
+
+        (Border Surface,Expander Card,Action Refresh,Func<bool> Flush,Action Stop) CreateRow(NoteItem item)
         {
             var title=UI.Text(item.Label,15);title.FontWeight=FontWeights.SemiBold;title.TextWrapping=TextWrapping.NoWrap;title.TextTrimming=TextTrimming.CharacterEllipsis;title.SetResourceReference(TextBlock.ForegroundProperty,"ControlText");
             var excerpt=UI.Text("",12,UI.Muted);excerpt.TextWrapping=TextWrapping.NoWrap;excerpt.TextTrimming=TextTrimming.CharacterEllipsis;excerpt.Margin=new(0,6,0,0);
             var header=new StackPanel();header.Children.Add(title);header.Children.Add(excerpt);
             var card=new Expander{Header=header,Margin=new(0),Template=SavedNoteCardTemplate()};UI.Named(card,item.DisplayTitle);System.Windows.Automation.AutomationProperties.SetAutomationId(card,"Saved note card "+item.Id);ControlFeedback.SetEnabled(card,false);
             var surface=new Border{Child=card,CornerRadius=new(18),BorderThickness=new(1),Margin=new(5,0,5,10),VerticalAlignment=VerticalAlignment.Top};surface.SetResourceReference(Border.BackgroundProperty,"SettingsCard");surface.SetResourceReference(Border.BorderBrushProperty,"SettingsLineSoft");
+            var selection=new CheckBox{Width=28,MinHeight=32,HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Center,Template=NoteSelectionTemplate()};selection.SetResourceReference(FrameworkElement.StyleProperty,"TaskToggle");ControlFeedback.SetEnabled(selection,false);System.Windows.Automation.AutomationProperties.SetAutomationId(selection,"Select note "+item.Id);
+            selection.Checked+=(_,_)=>{if(selected.Add(item.Id))UpdateSelection();};selection.Unchecked+=(_,_)=>{if(selected.Remove(item.Id))UpdateSelection();};
+            var delete=UI.CaptionButton("Delete note",()=>DeleteChosen(new[]{item.Id}));System.Windows.Automation.AutomationProperties.SetAutomationId(delete,"Delete note "+item.Id);delete.Width=delete.Height=32;delete.MinHeight=delete.MinWidth=0;delete.Padding=new(7);delete.Margin=new(0);delete.Background=Brushes.Transparent;delete.HorizontalAlignment=HorizontalAlignment.Right;ControlFeedback.SetEnabled(delete,false);
+            var trash=new System.Windows.Shapes.Path{Data=Geometry.Parse("M3,6 H21 M9,6 V3 H15 V6 M6,6 L7,21 H17 L18,6 M10,10 V17 M14,10 V17"),StrokeThickness=1.5,StrokeStartLineCap=PenLineCap.Round,StrokeEndLineCap=PenLineCap.Round,StrokeLineJoin=PenLineJoin.Round,Stretch=Stretch.Uniform,Width=16,Height=18,IsHitTestVisible=false};trash.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty,"ControlText");delete.Content=trash;
+            // Separate siblings of HeaderSite: selecting/deleting never toggles the Expander.
+            card.Tag=new object[]{selection,delete};
             TextBox? editor=null,titleInput=null;TextBlock? result=null;DispatcherTimer? timer=null;bool updating=false,syncingEditor=false;
             bool Flush()
             {
@@ -58,6 +86,8 @@ public sealed partial class SettingsWindow
             void Refresh()
             {
                 title.Text=item.Label;title.ToolTip=item.DisplayTitle;UI.Named(card,item.DisplayTitle);
+                selection.IsChecked=selected.Contains(item.Id);string selectLabel=Localization.Format("Select note: {0}",item.DisplayTitle),deleteLabel=Localization.Format("Delete note: {0}",item.DisplayTitle);UI.Named(selection,selectLabel);selection.ToolTip=selectLabel;UI.Named(delete,deleteLabel);delete.ToolTip=deleteLabel;
+                surface.SetResourceReference(Border.BackgroundProperty,selected.Contains(item.Id)?"SelectionFill":"SettingsCard");surface.SetResourceReference(Border.BorderBrushProperty,selected.Contains(item.Id)?"Accent":"SettingsLineSoft");
                 string body=item.Text.Trim();if(string.IsNullOrWhiteSpace(item.Title) && body.StartsWith(item.DisplayTitle,StringComparison.Ordinal))body=body[item.DisplayTitle.Length..].Trim();
                 excerpt.Text=body.Length==0?Localization.Text("Click to open this note"):body[..Math.Min(160,body.Length)].Replace('\r',' ').Replace('\n',' ');
                 if(editor!=null && titleInput!=null && !editor.IsKeyboardFocusWithin && !titleInput.IsKeyboardFocusWithin && !updating && timer?.IsEnabled!=true)
@@ -83,14 +113,9 @@ public sealed partial class SettingsWindow
                     if(!Flush())return;debounce.Stop();
                     if(service.OpenNoteInDraft(item.Id)){State("Opened in quick draft. Your previous draft was preserved in the library.");draft.Focus();}else Failure();
                 }));
-                actions.Children.Add(UI.CaptionButton("Delete note",()=>
-                {
-                    if(MessageBox.Show(this,Localization.Text("Delete this saved note? The quick draft will be kept."),Localization.Text("Delete note"),MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes)return;
-                    timer.Stop();if(!service.RemoveNote(item.Id))State("Could not save. Your text is still in the editor.");
-                }));
                 var content=new StackPanel();content.Children.Add(UI.Caption("Note title (optional)",11,UI.Muted));content.Children.Add(titleInput);content.Children.Add(editor);content.Children.Add(actions);content.Children.Add(result);card.Content=content;
             };
-            return(surface,card,Refresh,Flush);
+            return(surface,card,Refresh,Flush,()=>timer?.Stop());
         }
         void Refresh()
         {
@@ -98,7 +123,8 @@ public sealed partial class SettingsWindow
             save.IsEnabled=!string.IsNullOrWhiteSpace(service.Note);
             count.Text=Localization.Format("{0} of {1} saved notes",service.Notes.Count,ProductivityService.MaxSavedNotes);
             var ids=service.Notes.Select(n=>n.Id).ToHashSet();
-            foreach(var id in rows.Keys.Where(id=>!ids.Contains(id)).ToArray()){library.Children.Remove(rows[id].Surface);rows.Remove(id);}
+            selected.IntersectWith(ids);
+            foreach(var id in rows.Keys.Where(id=>!ids.Contains(id)).ToArray()){rows[id].Stop();library.Children.Remove(rows[id].Surface);rows.Remove(id);}
             foreach(var item in service.Notes)
             {
                 if(!rows.TryGetValue(item.Id,out var row)){row=CreateRow(item);rows[item.Id]=row;library.Children.Insert(service.Notes.IndexOf(item),row.Surface);}
@@ -106,10 +132,15 @@ public sealed partial class SettingsWindow
             }
             if(service.Notes.Count==0){library.Children.Clear();library.Children.Add(UI.Caption("No saved notes yet. Write a quick draft and choose Save to library.",12,UI.Muted));}
             else foreach(var empty in library.Children.OfType<TextBlock>().ToArray())library.Children.Remove(empty);
-            ArrangeCards();
+            ArrangeCards();UpdateSelection();
         }
         var libraryHeading=UI.Caption("Saved notes",16);libraryHeading.FontWeight=FontWeights.SemiBold;libraryHeading.Margin=new(0,6,0,6);host.Children.Add(libraryHeading);host.Children.Add(count);
-        var libraryHint=UI.Caption("Click a card to open it. Choose a title inside, or leave it blank to use the first phrase.",12,UI.Muted);libraryHint.Margin=new(0,5,0,14);host.Children.Add(libraryHint);host.Children.Add(library);
+        var libraryHint=UI.Caption("Click a card to open it. Choose a title inside, or leave it blank to use the first phrase.",12,UI.Muted);libraryHint.Margin=new(0,5,0,10);host.Children.Add(libraryHint);
+        var selectionActions=new WrapPanel{Margin=new(0,0,0,4)};
+        selectAll=UI.CaptionButton("Select all",()=>{selected.UnionWith(service.Notes.Select(n=>n.Id));UpdateSelection();});selectionActions.Children.Add(selectAll);
+        clearSelection=UI.CaptionButton("Clear selection",()=>{selected.Clear();UpdateSelection();});selectionActions.Children.Add(clearSelection);
+        deleteSelected=UI.CaptionButton("Delete selected notes",()=>DeleteChosen(selected.ToArray()));selectionActions.Children.Add(deleteSelected);
+        host.Children.Add(selectionActions);selectionStatus.Margin=new(0,0,0,10);host.Children.Add(selectionStatus);host.Children.Add(library);
         host.Loaded+=(_,_)=>{if(!subscribed){service.Changed+=Refresh;subscribed=true;}Refresh();};
         host.Unloaded+=(_,_)=>
         {

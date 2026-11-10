@@ -168,12 +168,15 @@ public sealed class ProductivityService : IDisposable
         if(!Save()){(item.Text,item.Title,item.UpdatedAt)=previous;return false;}
         Changed?.Invoke();return true;
     }
-    public bool RemoveNote(string id)
+    public bool RemoveNote(string id)=>RemoveNotes(new[]{id});
+    // One persisted mutation: failed writes restore the whole selection in its original order.
+    public bool RemoveNotes(IEnumerable<string> ids)
     {
-        if(_disposed)return false;
-        int index=Notes.FindIndex(n=>n.Id==id);if(index<0)return false;
-        var item=Notes[index];Notes.RemoveAt(index);
-        if(!Save()){Notes.Insert(index,item);return false;}
+        if(_disposed || ids==null)return false;
+        var selected=new HashSet<string>(ids,StringComparer.Ordinal);
+        if(selected.Count==0 || !Notes.Any(n=>selected.Contains(n.Id)))return false;
+        var previous=Notes.ToArray();Notes.RemoveAll(n=>selected.Contains(n.Id));
+        if(!Save()){Notes.Clear();Notes.AddRange(previous);return false;}
         Changed?.Invoke();return true;
     }
     // Persist the outgoing draft and replacement together before notifying any editor.

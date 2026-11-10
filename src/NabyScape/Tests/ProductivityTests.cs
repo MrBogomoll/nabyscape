@@ -157,6 +157,31 @@ public static class ProductivityTests
             Assert(!service.UpdateNote(note.Id,"Do not apply","Do not rename") && note.Text=="Saved" && note.Title=="Keep title");
             Assert(!service.RemoveNote(note.Id) && service.Notes.Single().Id==note.Id);
         });
+        Check("Productivity: batch note deletion removes only chosen IDs and preserves draft across restart",root=>
+        {
+            var remove=typeof(ProductivityService).GetMethod("RemoveNotes");Assert(remove!=null);
+            string keep;
+            using(var service=Service(root))
+            {
+                for(int i=0;i<4;i++){service.Note="Текст "+i;service.NoteTitle="Заголовок "+i;Assert(service.SaveDraftToLibrary());}
+                var original=service.Notes.ToArray();keep=original[1].Id;service.Note="Черновик";service.NoteTitle="Название черновика";Assert(service.AddTask("Задача"));
+                int changes=0;service.Changed+=()=>changes++;
+                bool Delete(string[] ids)=>(bool)remove!.Invoke(service,new object[]{ids})!;
+                Assert(Delete(new[]{original[0].Id,original[2].Id,original[0].Id,"missing"}));
+                Assert(service.Notes.SequenceEqual(new[]{original[1],original[3]}) && changes==1 && service.Note=="Черновик" && service.NoteTitle=="Название черновика");
+                Assert(!Delete(Array.Empty<string>()) && !Delete(new[]{"missing"}) && changes==1);
+            }
+            using var restored=Service(root);Assert(restored.Notes.Count==2 && restored.Notes[0].Id==keep && restored.Note=="Черновик" && restored.NoteTitle=="Название черновика" && restored.Tasks.Single().Text=="Задача");
+        });
+        Check("Productivity: failed batch note deletion rolls back every note in original order",root=>
+        {
+            var remove=typeof(ProductivityService).GetMethod("RemoveNotes");Assert(remove!=null);
+            using var service=Service(root);for(int i=0;i<3;i++){service.Note="Заметка "+i;Assert(service.SaveDraftToLibrary());}
+            var original=service.Notes.ToArray();int changes=0;service.Changed+=()=>changes++;
+            using var locked=new FileStream(Path.Combine(root,"productivity.json"),FileMode.Open,FileAccess.Read,FileShare.Read);
+            Assert(!(bool)remove!.Invoke(service,new object[]{original.Select(n=>n.Id).ToArray()})!);
+            Assert(service.Notes.SequenceEqual(original) && changes==0 && service.LastError!=null);
+        });
         Check("Productivity: task completion notifies shared views and persists",root=>
         {
             string id;
