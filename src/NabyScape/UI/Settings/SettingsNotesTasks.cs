@@ -163,7 +163,7 @@ public sealed partial class SettingsWindow
             foreach(var item in service.Tasks)
             {
                 var row=new DockPanel{Margin=new(0,5,0,5)};
-                var remove=UI.CaptionButton("Delete task",()=>service.RemoveTask(item.Id));DockPanel.SetDock(remove,Dock.Right);row.Children.Add(remove);
+                var remove=UI.CaptionButton("Delete task",()=>{if(!service.RemoveTask(item.Id))feedback.Text=Localization.Text("Could not save. Try again.");});DockPanel.SetDock(remove,Dock.Right);row.Children.Add(remove);
                 var label=UI.Text(item.Text,13);label.SetResourceReference(TextBlock.ForegroundProperty,"ControlText");if(item.Done)label.TextDecorations=TextDecorations.Strikethrough;
                 var toggle=new CheckBox{IsChecked=item.Done,Content=label,VerticalAlignment=VerticalAlignment.Center};
                 // A task is a checkbox, not a preference switch inherited from Settings.
@@ -177,7 +177,7 @@ public sealed partial class SettingsWindow
         {
             if(string.IsNullOrWhiteSpace(input.Text))return;
             if(service.AddTask(input.Text)){input.Clear();feedback.Text=Localization.Text("Tasks are shared with the dock and saved on this device.");}
-            else feedback.Text=Localization.Text("Remove a task before adding another. Your draft is still here.");
+            else feedback.Text=Localization.Text(service.Tasks.Count>=100?"Remove a task before adding another. Your draft is still here.":"Could not save. Your text is still in the editor.");
         }
         var add=UI.CaptionButton("Add task",Add,true);add.IsEnabled=false;input.TextChanged+=(_,_)=>add.IsEnabled=!string.IsNullOrWhiteSpace(input.Text);
         input.KeyDown+=(_,e)=>{if(e.Key==Key.Enter){Add();e.Handled=true;}};

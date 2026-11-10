@@ -118,6 +118,9 @@ internal static class SettingsThemeDiagnostics
             check("Caption search is an input area rather than a drag area",Hit(searchOrigin.X+20,searchOrigin.Y+14)==new IntPtr(1));
             searchField.Text="заметки";await Task.Delay(70);Save(window,Path.Combine(directory,"caption-search.png"));
             check("Search finds nested notes settings",Tree(window).OfType<Button>().Any(b=>UI.Identity(b).Contains(Localization.Text("Notes")) && b.IsVisible));searchField.Clear();
+            var timerResult=((SettingsSearchItem[])typeof(SettingsWindow).GetMethod("BuildSettingsSearchIndex",BindingFlags.Static|BindingFlags.NonPublic)!.Invoke(null,null)!).Single(i=>i.Title=="Timer & focus duration");
+            typeof(SettingsWindow).GetMethod("OpenSettingsSearchResult",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(window,new object[]{timerResult});await Task.Delay(100);
+            check("Timer search opens the current timers page and focus section",timerResult.Category=="Timers" && Diagnostics.CurrentSettingsCategory(window)=="Timers" && Tree(window).OfType<Border>().Any(b=>b.Tag as string=="Focus sessions"));
             window.OpenCategory("Notes");await Task.Delay(80);
             var draft=Tree(window).OfType<TextBox>().Single(t=>UI.Identity(t)=="Quick draft");draft.Text="Заметка для проверки библиотеки";
             var draftTitle=Tree(window).OfType<TextBox>().Single(t=>UI.Identity(t)=="Note title");draftTitle.Text="Из настроек";
@@ -176,6 +179,8 @@ internal static class SettingsThemeDiagnostics
             Tree(window).OfType<Button>().Single(b=>UI.Identity(b)=="Add task").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(60);
             var task=app.Productivity.Tasks.Last(t=>t.Text=="Проверить библиотеку заметок");
             var taskCheck=Tree(window).OfType<CheckBox>().Single(c=>UI.Identity(c)==task.Text);taskCheck.IsChecked=true;taskCheck.RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
+            taskCheck=Tree(window).OfType<CheckBox>().Single(c=>UI.Identity(c)==task.Text);taskCheck.IsChecked=false;window.UpdateLayout();var taskHit=window.InputHitTest(taskCheck.TransformToAncestor(window).Transform(new Point(8,taskCheck.ActualHeight/2))) as DependencyObject;
+            check("Empty task mark accepts a click through its center",taskHit!=null && (ReferenceEquals(taskHit,taskCheck) || taskCheck.IsAncestorOf(taskHit)));taskCheck.IsChecked=true;
             check("Tasks page completion survives a store reload",app.Store.Load<ProductivityData>("productivity").Tasks.Any(t=>t.Id==task.Id && t.Done));Save(window,Path.Combine(directory,"tasks-list.png"));
             window.Hide();app.Settings.HideFullscreen=app.Settings.HideMaximized=app.Settings.AlwaysTucked=false;
             app.Settings.Widgets.Single(w=>w.Id=="clock").Enabled=false;app.Settings.Widgets.Single(w=>w.Id=="notes").Enabled=true;
@@ -250,6 +255,8 @@ internal static class SettingsThemeDiagnostics
             string originalFill=app.Settings.ControlFill;app.Settings.ControlFill="#FFFFFF";app.ChangeSettings();
             check("Light island controls do not recolor ordinary island text",((SolidColorBrush)app.FindResource("ControlText")).Color.R<40 && ((SolidColorBrush)app.FindResource("BodyText")).Color.R>220);
             app.Settings.ControlFill=originalFill;app.ChangeSettings();
+            window.OpenCategory("Application");await Task.Delay(80);
+            check("About and updates show the fork version without build hash",AppVersion.Display.Contains("-ru.") && !AppVersion.Display.Contains('+') && Tree(window).OfType<TextBlock>().Count(t=>t.Text.Contains(AppVersion.Display))>=2);
         }
         finally{window.Close();}
     }

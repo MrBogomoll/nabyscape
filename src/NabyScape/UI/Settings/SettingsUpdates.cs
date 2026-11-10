@@ -17,7 +17,7 @@ public sealed partial class SettingsWindow
     {
         if(!app.Updates.ChannelEnabled)
         {
-            page.Children.Add(Section("Updates",UI.Text(Localization.Text("Installed:")+" "+OfficialUpdates.InstalledVersion+" · "+RuntimePlatform.Rid,13),
+            page.Children.Add(Section("Updates",UI.Text(Localization.Text("Installed:")+" "+AppVersion.Display+" · "+RuntimePlatform.Rid,13),
                 UI.Caption("This fork is protected from upstream updates. Checks, downloads and automatic installation are blocked.",12),
                 UI.Caption("New upstream changes are reviewed and merged into our fork manually. Install only our builds; the original setup can replace this copy if you run it manually.",11,UI.Muted),
                 UI.CaptionButton("Open our fork",()=>ShortcutService.Open(new(){Target="https://github.com/MrBogomoll/nabyscape"}))));
@@ -28,7 +28,7 @@ public sealed partial class SettingsWindow
         auto.IsEnabled=download.IsEnabled=app.Updates.ChannelEnabled;
         var check=UI.CaptionButton("Check for updates",()=>{_=app.Updates.Check(true);});check.IsEnabled=app.Updates.ChannelEnabled;
         updateStatus=UI.Text(Localization.Text(app.Updates.Status),12,UI.Muted);UI.LocalizedName(updateStatus,"Update status");
-        page.Children.Add(Section("Updates",UI.Text(Localization.Text("Installed:")+" "+OfficialUpdates.InstalledVersion+" · "+RuntimePlatform.Rid,13),
+        page.Children.Add(Section("Updates",UI.Text(Localization.Text("Installed:")+" "+AppVersion.Display+" · "+RuntimePlatform.Rid,13),
             UI.Caption(app.Updates.ChannelEnabled?"Check for a release, download it, then choose when to install and restart.":"Upstream updates are disabled in this Russian build to preserve its changes.",12),auto,download,
             UI.Caption("Automatic downloads are optional and may use a metered connection. They follow automatic startup checks; installation always waits for you.",11,UI.Muted),updateStatus,
             check,

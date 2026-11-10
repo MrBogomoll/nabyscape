@@ -38,5 +38,6 @@
   "Delete notes": "Удалить заметки",
   "Delete {0} selected notes? The quick draft will be kept.": "Удалить выбранные заметки ({0}) из библиотеки? Черновик останется на месте.",
   "Notes deleted.": "Заметки удалены.",
+  "No timed lyrics were found. Try another source or a local LRC file.": "Синхронизированный текст не найден. Попробуйте другой источник или локальный файл LRC.",
   "Could not delete notes. Try again.": "Не удалось удалить заметки. Попробуйте ещё раз."
 }

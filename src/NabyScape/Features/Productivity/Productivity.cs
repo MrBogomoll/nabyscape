@@ -209,9 +209,17 @@ public sealed class ProductivityService : IDisposable
     public bool AddTask(string text)
     {
         if(_disposed || string.IsNullOrWhiteSpace(text) || Tasks.Count>=100)return false;
-        Tasks.Add(new(){Text=Bound(text.Trim(),20000)}); Commit(); return true;
+        var item=new TaskItem{Text=Bound(text.Trim(),20000)};Tasks.Add(item);
+        if(!Save()){Tasks.Remove(item);return false;}
+        Changed?.Invoke();return true;
     }
-    public void RemoveTask(string id) { if(!_disposed && Tasks.RemoveAll(t=>t.Id==id)>0)Commit(); }
+    public bool RemoveTask(string id)
+    {
+        if(_disposed)return false;int index=Tasks.FindIndex(t=>t.Id==id);if(index<0)return false;
+        var item=Tasks[index];Tasks.RemoveAt(index);
+        if(!Save()){Tasks.Insert(index,item);return false;}
+        Changed?.Invoke();return true;
+    }
     public int AddFiles(IEnumerable<string> paths)
     {
         if(_disposed || paths==null)return 0;

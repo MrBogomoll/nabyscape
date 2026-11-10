@@ -75,7 +75,8 @@ internal sealed class CountdownView : StackPanel
             var button=Icons.Button(direction<0?"minus":"plus",(direction<0?Localization.Text("Decrease "):Localization.Text("Increase "))+Localization.Text(label),()=>Step(direction),false,28);button.Content=Icons.Create(direction<0?"minus":"plus",12,UI.Muted);button.Margin=new(0);button.Padding=new(7);button.Background=Brushes.Transparent;
             button.SetBinding(IsEnabledProperty,new System.Windows.Data.Binding("IsEnabled"){Source=input});Grid.SetColumn(button,direction<0?0:2);controls.Children.Add(button);
         }
-        panel.Children.Add(new Border{Background=UI.Brush("#14161A"),BorderBrush=UI.Brush("#30343B"),BorderThickness=new(.7),CornerRadius=new(8),Child=controls});return panel;
+        input.SetResourceReference(Control.ForegroundProperty,"ControlText");
+        var field=new Border{BorderThickness=new(.7),CornerRadius=new(8),Child=controls};field.SetResourceReference(Border.BackgroundProperty,"ControlFill");field.SetResourceReference(Border.BorderBrushProperty,"ControlBorder");panel.Children.Add(field);return panel;
     }
 
     private void Subscribe(){if(!IsLoaded || !IsVisible || subscribed)return;app.Updated+=OnUpdate;subscribed=true;Refresh();}

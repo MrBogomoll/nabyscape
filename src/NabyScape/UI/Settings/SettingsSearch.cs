@@ -71,7 +71,7 @@ public sealed partial class SettingsWindow
         Add("Uninstall NabyScape","Application","Local storage","Uninstall NabyScape…","uninstall remove application delete all data models cleanup fresh install hapus aplikasi");
         Add("Image input & support test","AI","AI companion","Image input","image input vision send pictures photo support test");
         Add("Test microphone and speech","AI","AI companion","Speech checks","microphone not working test transcription asr tts play sample speaker voice");
-        Add("Timer & focus duration","Content","Focus sessions","","focus timer pomodoro menit durasi break istirahat");
+        Add("Timer & focus duration","Timers","Focus sessions","","focus timer pomodoro menit durasi break istirahat");
         Add("Notification sounds","Notifications","Completion sound","","notifikasi notif suara sound bunyi timer fokus");
         Add("Notifications from other apps","Notifications","Other apps","Show notifications from other apps","claude chatgpt telegram whatsapp discord windows toast notif aplikasi lain other apps");
         Add("Quiet hours","Notifications","Notification presentation","","quiet hours mute silent senyap diam jadwal malam");
@@ -131,7 +131,7 @@ public sealed partial class SettingsWindow
                 foreach(var expander in SettingTree((DependencyObject?)section??page).OfType<Expander>().Where(x=>SettingTree(x).Contains(target)))expander.IsExpanded=true;
                 page.UpdateLayout();target.Focus();target.BringIntoView();SetSaveFeedback(Localization.Format("Opened · {0}",Localization.Text(item.Title)));
             }
-            else if(section!=null){foreach(var parent in SettingTree(page).OfType<Expander>().Where(e=>SettingTree(e).Contains(section)))parent.IsExpanded=true;page.UpdateLayout();section.BringIntoView();ConfigurePreviewForSection(item.Section);RefreshPreview();}
+            else if(section!=null){foreach(var parent in SettingTree(page).OfType<Expander>().Where(e=>SettingTree(e).Contains(section)))parent.IsExpanded=true;page.UpdateLayout();section.BringIntoView();RefreshPreview();}
         });
     }
 }

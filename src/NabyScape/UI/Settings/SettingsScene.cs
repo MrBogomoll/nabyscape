@@ -204,7 +204,7 @@ internal sealed class SettingsScene : FrameworkElement
             case "Local storage":
                 Caption("Saved on this PC",24,21,17,true);Caption("Preferences · Notes · Tasks",24,51,12);Caption("No account required",24,77,11,false,muted);break;
             case "About NabyScape":
-                Caption("NabyScape",24,20,23,true);Caption("Windows 11 · x64",24,60,12,false,muted);Text(Localization.Format("Version {0}",typeof(App).Assembly.GetName().Version!.ToString(3)),250,31,12);break;
+                Caption("NabyScape",24,20,23,true);Caption("Windows 11 · x64",24,60,12,false,muted);Text(Localization.Format("Version {0}",AppVersion.Display),250,31,12);break;
             case "Language & accessibility":
                 Caption("Language",24,18,12,true);Keys(s.UiLanguage=="ru"?"Русский":s.UiLanguage=="es"?"Español":s.UiLanguage=="id"?"Bahasa Indonesia":"English",210,12,176);
                 Caption("Text size",24,55,12,true);Caption((s.AccessibilityTextScale*100).ToString("0",CultureInfo.InvariantCulture)+"%",218,55,12);Toggle(350,55,s.AccessibilityHighContrast);Note("Language · text size · contrast · Windows motion preferences");break;

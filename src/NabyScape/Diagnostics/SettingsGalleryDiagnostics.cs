@@ -31,7 +31,7 @@ internal static class SettingsGalleryDiagnostics
                 Save(window,window.ActualWidth,window.ActualHeight,Path.Combine(directory,"settings-page-"+id+".png"));
                 var page=(FrameworkElement)typeof(SettingsWindow).GetField("page",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)!;
                 Save(page,page.ActualWidth,page.ActualHeight,Path.Combine(directory,"settings-form-"+id+".png"),true);
-                var form=Diagnostics.Descendants(window).OfType<ScrollViewer>().Single(v=>AutomationProperties.GetName(v)=="Settings form viewport");var origin=page.TransformToAncestor(form).Transform(new Point());
+                var form=Diagnostics.Descendants(window).OfType<ScrollViewer>().Single(v=>UI.Identity(v)=="Settings form viewport");var origin=page.TransformToAncestor(form).Transform(new Point());
                 check($"Settings gallery {id}: page {origin.X:0}+{page.ActualWidth:0}+{page.Margin.Right:0} within viewport {form.ViewportWidth:0} of {form.ActualWidth:0}",origin.X+page.ActualWidth<=form.ViewportWidth+.5);
             }
             // Narrow window: the sidebar becomes a category chooser above the page.
@@ -40,29 +40,29 @@ internal static class SettingsGalleryDiagnostics
                 window.Width=size.Item1;window.Height=size.Item2;await Task.Delay(120);navigate.Invoke(window,new object[]{"Appearance"});await Task.Delay(80);window.UpdateLayout();
                 Save(window,window.ActualWidth,window.ActualHeight,Path.Combine(directory,$"settings-narrow-{size.Item1:0}.png"));
                 var narrowPage=(FrameworkElement)typeof(SettingsWindow).GetField("page",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(window)!;
-                var chooser=Diagnostics.Descendants(window).OfType<ComboBox>().Single(c=>AutomationProperties.GetName(c)=="Settings category");
+                var chooser=Diagnostics.Descendants(window).OfType<ComboBox>().Single(c=>UI.Identity(c)=="Settings category");
                 check($"Narrow {size.Item1:0}: chooser visible and page laid out (page {narrowPage.ActualWidth:0}, window {window.ActualWidth:0})",chooser.IsVisible && narrowPage.ActualWidth>0);
             }
             window.Width=1100;window.Height=780;await Task.Delay(80);
             var flags=BindingFlags.Instance|BindingFlags.NonPublic;
             var settingsPage=(Panel)typeof(SettingsWindow).GetField("page",flags)!.GetValue(window)!;
-            string[] Sections()=>settingsPage.Children.OfType<Border>().Select(b=>b.Tag as string).Where(t=>t!=null).ToArray()!;
+            string[] Sections()=>settingsPage.Children.OfType<Border>().Select(b=>b.Tag as string).Where(t=>t!=null).Distinct().ToArray()!;
             Button Nav(string id)=>((System.Collections.Generic.Dictionary<string,Button>)typeof(SettingsWindow).GetField("navigationButtons",flags)!.GetValue(window)!)[id];
             navigate.Invoke(window,new object[]{"Appearance"});window.UpdateLayout();
-            check("Essentials: Look & colors shows shape and colors only",Sections().SequenceEqual(new[]{"Shape","Color & material"}));
+            check("Essentials: Look & colors keeps theme, window appearance, shape and colors",Sections().SequenceEqual(new[]{"Window theme","Window appearance","Shape","Color & material"}));
             check("Essentials: detailed pages leave the sidebar",Nav("Motion").Visibility!=Visibility.Visible && Nav("Controls").Visibility!=Visibility.Visible && Nav("Appearance").Visibility==Visibility.Visible);
             check("Essentials: a disclosure card offers every setting",Diagnostics.Descendants(settingsPage).OfType<Button>().Any(b=>AutomationProperties.GetAutomationId(b)=="Show all settings"));
-            navigate.Invoke(window,new object[]{"Content"});window.UpdateLayout();
+            navigate.Invoke(window,new object[]{"Clipboard"});window.UpdateLayout();
             check("Essentials: clipboard capture stays reachable from widgets",Sections().Contains("Clipboard history"));
             var open=typeof(SettingsWindow).GetMethod("OpenSettingsSearchResult",flags)!;
             open.Invoke(window,new object[]{new SettingsSearchItem("Quiet hours","Notifications","Notification presentation","","quiet")});window.UpdateLayout();
             check("Essentials: search opens a detailed section directly",Sections().Contains("Notification presentation"));
             navigate.Invoke(window,new object[]{"Appearance"});window.UpdateLayout();
-            check("Essentials: leaving a search result restores the essentials",Sections().Length==2);
+            check("Essentials: leaving a search result restores the essentials",Sections().Length==4);
             typeof(SettingsWindow).GetMethod("SetShowAllSettings",flags)!.Invoke(window,new object[]{true});window.UpdateLayout();
             check("Show all: every Look & colors section returns",Sections().Contains("Typography") && Sections().Contains("Surface") && Nav("Motion").Visibility==Visibility.Visible && app.Settings.SettingsShowAll);
             typeof(SettingsWindow).GetMethod("SetShowAllSettings",flags)!.Invoke(window,new object[]{false});window.UpdateLayout();
-            check("Show essentials only returns to the short page",Sections().Length==2 && !app.Settings.SettingsShowAll);
+            check("Show essentials only returns to the short page",Sections().Length==4 && !app.Settings.SettingsShowAll);
         }
         finally{fitting.SetValue(window,false);window.Close();}
     }

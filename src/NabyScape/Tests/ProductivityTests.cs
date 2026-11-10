@@ -182,6 +182,13 @@ public static class ProductivityTests
             Assert(!(bool)remove!.Invoke(service,new object[]{original.Select(n=>n.Id).ToArray()})!);
             Assert(service.Notes.SequenceEqual(original) && changes==0 && service.LastError!=null);
         });
+        Check("Productivity: failed task addition and deletion preserve memory and report failure",root=>
+        {
+            using var service=Service(root);Assert(service.AddTask("Keep task"));var item=service.Tasks.Single();int changes=0;service.Changed+=()=>changes++;
+            using var locked=new FileStream(Path.Combine(root,"productivity.json"),FileMode.Open,FileAccess.Read,FileShare.Read);
+            Assert(!service.AddTask("Do not add") && service.Tasks.SequenceEqual(new[]{item}) && changes==0);
+            service.RemoveTask(item.Id);Assert(service.Tasks.SequenceEqual(new[]{item}) && changes==0 && service.LastError!=null);
+        });
         Check("Productivity: task completion notifies shared views and persists",root=>
         {
             string id;

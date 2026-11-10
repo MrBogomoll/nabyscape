@@ -89,9 +89,7 @@ public sealed partial class SettingsWindow
         string key=app.Media.Title+"|"+app.Media.Artist+"|"+app.Media.Playing+"|"+CompactDockPresentation.TimedKind(app.Settings,app.Session,DateTimeOffset.UtcNow);
         if(key!=livePreviewKey){livePreviewKey=key;RefreshPreview();}
     }
-    private void ConfigurePreviewForSetting(string name)
-    { /* The shared preview changes only through its own controls. */ }
-    private ActivityVisual? audioSignalWave;
+private ActivityVisual? audioSignalWave;
     private TextBlock? audioSignalState;
     private void UpdateAudioSignal(double seconds)
     {
