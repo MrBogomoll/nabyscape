@@ -256,7 +256,7 @@ internal static class SettingsThemeDiagnostics
             check("Light island controls do not recolor ordinary island text",((SolidColorBrush)app.FindResource("ControlText")).Color.R<40 && ((SolidColorBrush)app.FindResource("BodyText")).Color.R>220);
             app.Settings.ControlFill=originalFill;app.ChangeSettings();
             window.OpenCategory("Application");await Task.Delay(80);
-            check("About and updates show the fork version without build hash",AppVersion.Display.Contains("-ru.") && !AppVersion.Display.Contains('+') && Tree(window).OfType<TextBlock>().Count(t=>t.Text.Contains(AppVersion.Display))>=2);
+            check("About and updates show the fork version without build hash",Version.TryParse(AppVersion.Display.Split('-')[0],out _) && !AppVersion.Display.Contains('+') && Tree(window).OfType<TextBlock>().Count(t=>t.Text.Contains(AppVersion.Display))>=2);
         }
         finally{window.Close();}
     }

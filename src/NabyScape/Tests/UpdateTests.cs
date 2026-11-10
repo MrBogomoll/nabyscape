@@ -32,7 +32,7 @@ internal static class UpdateTests
         });
         test("Updates accept newer stable and ignore equal/older releases",()=>{Assert(OfficialUpdates.Parse(Release("2.4.3"),new(2,4,2))?.Version==new Version(2,4,3));Assert(OfficialUpdates.Parse(Release("2.4.3"),new(2,4,3))==null && OfficialUpdates.Parse(Release("2.4.3"),new(3,0,0))==null);});
         test("Updates reject malformed host schema prerelease and wrong architecture assets",()=>
-        {Reject(()=>OfficialUpdates.Parse("{}",new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release(host:"http://github.com/BillyNabil/nabyscape"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release(host:"https://github.com.evil/BillyNabil/nabyscape"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release(name:"NabyScape-win-arm64-Setup.exe"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release().Replace("\"prerelease\":false","\"prerelease\":true"),new(2,4,2)));Reject(()=>OfficialUpdates.Parse(Release("2.4.3-beta"),new(2,4,2)));});
+        {Reject(()=>OfficialUpdates.Parse("{}",new(0,0,0)));Reject(()=>OfficialUpdates.Parse(Release(host:"http://github.com/BillyNabil/nabyscape"),new(0,0,0)));Reject(()=>OfficialUpdates.Parse(Release(host:"https://github.com.evil/BillyNabil/nabyscape"),new(0,0,0)));Reject(()=>OfficialUpdates.Parse(Release(name:"NabyScape-win-arm64-Setup.exe"),new(0,0,0)));Reject(()=>OfficialUpdates.Parse(Release().Replace("\"prerelease\":false","\"prerelease\":true"),new(0,0,0)));Reject(()=>OfficialUpdates.Parse(Release("2.4.3-beta"),new(0,0,0)));});
         test("Update diagnostic fixtures stay newer after release version bumps",()=>
         {
             foreach(var installed in new[]{new Version(2,4,3),new Version(2,5,0),new Version(3,0,0),OfficialUpdates.InstalledVersion})
@@ -94,7 +94,7 @@ internal static class UpdateTests
         test("Update helper rejects downgrade malformed version and arbitrary executable handoffs",()=>
         {
             var data=new UpdateHandoffData{ProcessId=42,StartedUtcTicks=DateTime.UtcNow.Ticks,InstalledPath=Path.Combine(Installer.InstallDirectory,"NabyScape.exe"),Hash=new string('A',64),Version="99.0.0"};Assert(UpdateHandoff.Validate(data)==new Version(99,0,0));
-            foreach(string version in new[]{"2.4.2","1.0.0","99.0.0-beta",""}){data.Version=version;try{UpdateHandoff.Validate(data);throw new Exception("Invalid handoff accepted");}catch(IOException){}}
+            foreach(string version in new[]{"0.0.0",OfficialUpdates.InstalledVersion.ToString(3),"99.0.0-beta",""}){data.Version=version;try{UpdateHandoff.Validate(data);throw new Exception("Invalid handoff accepted");}catch(IOException){}}
             data.Version="99.0.0";data.InstalledPath=Path.Combine(Path.GetTempPath(),"other.exe");try{UpdateHandoff.Validate(data);throw new Exception("Arbitrary handoff accepted");}catch(IOException){}
         });
         test("Update handoff exact PID start time path portable guard and backup failure",()=>
