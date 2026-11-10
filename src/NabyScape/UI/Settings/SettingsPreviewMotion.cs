@@ -86,7 +86,7 @@ public sealed partial class SettingsWindow
     }
     private void RefreshLivePreviewData()
     {
-        string key=app.Media.Title+"|"+app.Media.Artist+"|"+app.Media.Playing;
+        string key=app.Media.Title+"|"+app.Media.Artist+"|"+app.Media.Playing+"|"+CompactDockPresentation.TimedKind(app.Settings,app.Session,DateTimeOffset.UtcNow);
         if(key!=livePreviewKey){livePreviewKey=key;RefreshPreview();}
     }
     private void ConfigurePreviewForSetting(string name)

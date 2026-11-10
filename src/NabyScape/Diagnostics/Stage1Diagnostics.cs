@@ -31,7 +31,7 @@ internal static class Stage1Diagnostics
         Check("idle has no brand label or waveform",island.HeaderLabel.Text=="" && Field<ActivityVisual>("activity").Visibility==Visibility.Collapsed && !island.ClosedTitleWaveVisible);
         Check("idle retains enabled clock",Field<TextBlock>("compactClock").Visibility==Visibility.Visible);
         s.Widgets.Single(w=>w.Id=="clock").Enabled=false;app.ChangeSettings();await Task.Delay(100);
-        Check("idle respects disabled clock",island.HeaderLabel.Text=="" && Field<TextBlock>("compactClock").Visibility==Visibility.Collapsed);
+        Check("idle retains a clock fallback when the clock widget is disabled",island.HeaderLabel.Text=="" && Field<TextBlock>("compactClock").Visibility==Visibility.Visible);
         s.Widgets.Single(w=>w.Id=="clock").Enabled=true;app.ChangeSettings();
         island.ShowTools("notes");await Task.Delay(100);
         Check("Notes contains only note editor without subtabs",HasEntry("Quick notes") && !HasEntry("New task") && !Diagnostics.Descendants(island).OfType<Button>().Any(b=>b.Content?.ToString() is "Write" or "Tasks"));

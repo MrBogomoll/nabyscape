@@ -16,7 +16,8 @@ public sealed partial class SettingsWindow
     {
         var s=app.Settings;
         string widget=previewMode=="Closed"?"closed":previewContent switch{"Music"=>"media","Timer"=>"timer","Focus"=>"focus","Stopwatch"=>"stopwatch","System"=>"system","Note"=>"notes","Tasks"=>"tasks","Calendar"=>"calendar","Shelf"=>"files","Smart clipboard"=>"clips","AI"=>"ai","Launch"=>"shortcuts",_=>"preview"};
-        bool allowed=AmbientPolicy.Includes(s,widget),moving=app.Media.Playing && s.LiveActivity && IsVisible && WindowState!=WindowState.Minimized && previewStage.IsVisible;
+        bool idle=previewMode=="Closed" && previewContent=="Music" && !(app.Media.Available && app.Media.Playing && s.ClosedMediaContent!="None" && s.Widgets.Any(w=>w.Id=="media" && w.Enabled)) && CompactDockPresentation.TimedKind(s,app.Session,DateTimeOffset.UtcNow).Length==0;
+        bool allowed=!idle && AmbientPolicy.Includes(s,widget),moving=app.Media.Playing && s.LiveActivity && IsVisible && WindowState!=WindowState.Minimized && previewStage.IsVisible;
         ambientPreview.Radius=s.Radius;
         ambientPreview.SetAmbient(AmbientPolicy.ColorsFor(s,app.AmbientAudio.CoverColors),allowed?s.AmbientStrength:0,s.AmbientSpread,s.AmbientMotion,moving,AmbientLook.From(s));
         app.AmbientAudio.Set(ambientPreview,allowed && moving);

@@ -9,6 +9,30 @@ internal static class SettingsUxTests
     internal static void Run(Action<string,Action> test)
     {
         void Assert(bool value){if(!value)throw new Exception("Settings UX invariant failed");}
+        test("Compact idle clock stays visible without enabling its widget",()=>
+        {
+            Assert(CompactDockPresentation.ShowClock(false,true,false));
+            Assert(!CompactDockPresentation.ShowClock(false,false,false));
+            Assert(CompactDockPresentation.ShowClock(true,false,false));
+            Assert(!CompactDockPresentation.ShowClock(true,true,true));
+        });
+        test("Compact date spacing excludes clock and companion clearance",()=>
+        {
+            Assert(CompactDockPresentation.ContentWidth(228,514,true)==196);
+            Assert(CompactDockPresentation.DateRoom(196,40)<80);
+            Assert(CompactDockPresentation.DateRoom(CompactDockPresentation.ContentWidth(400,514,false),40)>=80);
+        });
+        test("Compact timer and stopwatch share priority and elapsed time",()=>
+        {
+            var settings=new Settings();foreach(var w in settings.Widgets)w.Enabled=w.Id is "timer" or "focus" or "stopwatch";
+            var session=new SessionState();var now=DateTimeOffset.UtcNow;long ticks=0;
+            session.Stopwatch.UseClock(()=>now,()=>ticks);session.Stopwatch.Toggle();ticks=65000;
+            Assert(CompactDockPresentation.TimedKind(settings,session,now)=="Stopwatch" && CompactDockPresentation.TimedText(settings,session,now).EndsWith("01:05"));
+            ticks=66000;Assert(CompactDockPresentation.TimedText(settings,session,now).EndsWith("01:06"));
+            session.Timer.Start(120,now);Assert(CompactDockPresentation.TimedKind(settings,session,now)=="Timer");
+            session.Focus.Start(300,now);Assert(CompactDockPresentation.TimedKind(settings,session,now)=="Focus");
+            session.Focus.Reset();session.Timer.Reset();session.Stopwatch.Toggle();Assert(CompactDockPresentation.TimedKind(settings,session,now)=="");
+        });
         test("Window themes persist and import without changing the island appearance",()=>
         {
             var settings=new Settings{WindowTheme="Dark",WindowGlass=42,WindowCompact=true,WindowEffects=false,WindowLargeCorners=false,WindowHoverAccents=false,Background="#123456",Accent="#ABCDEF"};

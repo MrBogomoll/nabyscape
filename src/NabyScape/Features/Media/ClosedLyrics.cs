@@ -41,7 +41,7 @@ public sealed partial class OverlayWindow
     }
     private bool ClosedMediaActive=>app.Settings.ClosedMediaContent!="None" && WidgetOn("media") && app.Media.Available && app.Media.Playing;
     private bool WantsClosedLyrics=>!closedLyricsDisposed && app.Settings.ClosedMediaContent=="Lyrics" && ClosedMediaActive &&
-        IsVisible && WindowState!=WindowState.Minimized && !userHidden && !IsTucked && !TuckRequested && !expanded && !peeking && !FeedbackVisible && app.Notifications.Current==null && !ClosedVoiceActivity && ActiveCountdown()==null;
+        IsVisible && WindowState!=WindowState.Minimized && !userHidden && !IsTucked && !TuckRequested && !expanded && !peeking && !FeedbackVisible && app.Notifications.Current==null && !ClosedVoiceActivity && ActiveCountdown()==null && !ClosedStopwatchActive;
     private int ClosedLyricIndex=>LyricTiming.CanUse(app.Media)?LyricTiming.VocalIndex(app.Lyrics.Result.Lines,app.Media.Timeline().elapsed+app.Settings.LyricsOffset):-1;
     private string ClosedMediaText
     {
@@ -82,7 +82,6 @@ public sealed partial class OverlayWindow
     }
     private void SetClosedSummary(string text)
     {
-        if(string.IsNullOrWhiteSpace(text) && IdleContent && !WidgetOn("clock"))text=Localization.Text(WidgetOn("media")?"Nothing playing":"Ready");
         if(summary.Text==text){RefreshLyricMarquee();return;}
         bool animate=WantsClosedLyrics && Motion.Enabled && !app.Settings.ReduceMotion && summary.Text.Length>0;
         if(animate)

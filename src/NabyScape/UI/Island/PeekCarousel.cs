@@ -69,8 +69,9 @@ public sealed partial class OverlayWindow
         var previous=PeekIcon("previous",Localization.Text("Previous track in preview"),()=>_=app.Media.Command("previous"));var next=PeekIcon("next",Localization.Text("Next track in preview"),()=>_=app.Media.Command("next"));var mute=PeekIcon("volume",Localization.Text("Mute preview audio"),()=>{app.Audio.ToggleMute();app.Audio.Read();Update();});var output=PeekIcon("chevron",Localization.Text("Choose preview audio output"),OpenAudioMenu);
         peekTrackPrevious=previous;peekTrackNext=next;peekMute=mute;peekOutput=output;controls.Children.Add(previous);Grid.SetColumn(next,1);controls.Children.Add(next);Grid.SetColumn(mute,2);controls.Children.Add(mute);
         peekVolume=new Slider{Minimum=0,Maximum=100,Height=26,Margin=new(7,0,9,0),VerticalAlignment=VerticalAlignment.Center};UI.Named(peekVolume,Localization.Text("Preview volume"));peekVolume.ValueChanged+=(_,_)=>{if(!updating){app.Audio.SetVolume(peekVolume.Value/100);}};Grid.SetColumn(peekVolume,3);controls.Children.Add(peekVolume);Grid.SetColumn(output,4);controls.Children.Add(output);var mixerButton=PeekIcon("mixer",Localization.Text("Open mixer from preview"),OpenMixer);Grid.SetColumn(mixerButton,5);controls.Children.Add(mixerButton);Grid.SetRow(controls,3);Grid.SetColumnSpan(controls,3);peekMedia.Children.Add(controls);AddPeekView("media",peekMedia);
-        var footer=new Grid{Margin=new(0,2,0,0)};peekFooter=footer;footer.ColumnDefinitions.Add(new(){Width=new GridLength(50)});footer.ColumnDefinitions.Add(new());footer.ColumnDefinitions.Add(new(){Width=new GridLength(48)});footer.ColumnDefinitions.Add(new(){Width=new GridLength(74)});footer.Children.Add(peekPageName);
-        var dots=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};peekDotStrip=dots;Grid.SetColumn(dots,1);footer.Children.Add(dots);
+        peekPageName.TextWrapping=TextWrapping.NoWrap;peekPageName.TextTrimming=TextTrimming.CharacterEllipsis;peekPageName.VerticalAlignment=VerticalAlignment.Center;
+        var footer=new Grid{Margin=new(0,2,0,0)};peekFooter=footer;footer.ColumnDefinitions.Add(new(){Width=new GridLength(100)});footer.ColumnDefinitions.Add(new());footer.ColumnDefinitions.Add(new(){Width=new GridLength(48)});footer.ColumnDefinitions.Add(new(){Width=new GridLength(74)});footer.Children.Add(peekPageName);
+        var dots=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};peekDotStrip=dots;dots.ClipToBounds=true;Grid.SetColumn(dots,1);footer.Children.Add(dots);
         foreach(var id in HoverPagePolicy.Ids)
         {
             var dot=PlainPeekButton(Localization.Text("Show ")+PeekName(id)+Localization.Text(" preview"),()=>SelectPeek(id));dot.Width=14;dot.Height=22;dot.Content=new Border{Width=4,Height=4,CornerRadius=new(2),Background=Brushes.White,Opacity=.3};peekDots[id]=dot;dots.Children.Add(dot);
@@ -154,7 +155,7 @@ public sealed partial class OverlayWindow
             if(animate && pair.Value.Visibility==Visibility.Visible)Motion.To(peekMoves[pair.Key],TranslateTransform.XProperty,x,300,0,()=>{if(pair.Key!=peekId)pair.Value.Visibility=Visibility.Collapsed;});else{peekMoves[pair.Key].BeginAnimation(TranslateTransform.XProperty,null);peekMoves[pair.Key].X=x;}
         }
         foreach(var pair in peekDots){pair.Value.Visibility=ids.Contains(pair.Key)?Visibility.Visible:Visibility.Collapsed;if(pair.Value.Content is Border dot){dot.Width=pair.Key==peekId?13:4;Motion.Fade(dot,pair.Key==peekId?.9:.25,180);}}
-        peekPageName.Text=PeekName(peekId);peekPrevious.IsEnabled=index>0;peekNext.IsEnabled=index<ids.Length-1;peekPrevious.Opacity=peekPrevious.IsEnabled?1:.25;peekNext.Opacity=peekNext.IsEnabled?1:.25;
+        peekPageName.Text=PeekName(peekId);peekPageName.ToolTip=peekPageName.Text;peekPrevious.IsEnabled=index>0;peekNext.IsEnabled=index<ids.Length-1;peekPrevious.Opacity=peekPrevious.IsEnabled?1:.25;peekNext.Opacity=peekNext.IsEnabled?1:.25;
     }
     internal void DragPeek(double distance)
     {var ids=PeekPages();int index=Array.IndexOf(ids,peekId);peekOffset=Math.Clamp(distance,-PeekWidth,PeekWidth);if((index==0 && distance>0)||(index==ids.Length-1 && distance<0))peekOffset*=.22;LayoutPeek(Motion.Enabled?peekOffset:0,false);}
@@ -180,9 +181,9 @@ public sealed partial class OverlayWindow
         peekPanel.Width=peekViewport.Width=safe.Width;peekPanel.Height=safe.Height;
         peekPanel.Margin=new(0,safe.Top,0,0);
         double contentHeight=peekDetailed?124:Math.Min(64,safe.Height);
-        peekFooter.ColumnDefinitions[0].Width=new(peekDetailed && safe.Width>=270?50:0);peekPageName.Visibility=safe.Width>=270?Visibility.Visible:Visibility.Collapsed;
+        peekFooter.ColumnDefinitions[0].Width=new(peekDetailed && safe.Width>=270?100:0);peekPageName.Visibility=safe.Width>=270?Visibility.Visible:Visibility.Collapsed;
         bool detachable=app.Settings.DetachablePreviews && peekId is "media" or "timer" or "focus" or "stopwatch" or "calendar" or "notes" or "files" or "system";peekFooter.ColumnDefinitions[3].Width=new(detachable?74:0);foreach(FrameworkElement child in peekFooter.Children)if(child.Tag as string=="detach")child.Visibility=detachable?Visibility.Visible:Visibility.Collapsed;
-        foreach(var dot in peekDots.Values)dot.Width=Math.Min(14,Math.Max(7,(safe.Width-48-(app.Settings.DetachablePreviews?74:0)-(safe.Width>=270?50:0))/Math.Max(1,PeekPages().Length)));peekViewport.Height=contentHeight;peekPanel.RowDefinitions[0].Height=new(contentHeight);
+        foreach(var dot in peekDots.Values)dot.Width=Math.Min(14,Math.Max(2,(safe.Width-48-(app.Settings.DetachablePreviews?74:0)-(safe.Width>=270?100:0))/Math.Max(1,PeekPages().Length)));peekViewport.Height=contentHeight;peekPanel.RowDefinitions[0].Height=new(contentHeight);
         peekPanel.RowDefinitions[1].Height=new(peekDetailed?24:0);peekFooter.Visibility=peekDetailed?Visibility.Visible:Visibility.Collapsed;
         foreach(var pair in peekViews)
         {
