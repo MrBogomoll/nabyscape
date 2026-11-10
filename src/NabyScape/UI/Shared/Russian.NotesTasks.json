@@ -24,5 +24,11 @@
   "Could not save. Try again.": "Не удалось сохранить. Попробуйте ещё раз.",
   "Open saved notes": "Открыть библиотеку",
   "Could not save this note. Check the library capacity or try again.": "Не удалось сохранить заметку. Проверьте свободное место в библиотеке или попробуйте ещё раз.",
-  "Saved": "Сохранено"
+  "Saved": "Сохранено",
+  "Saved note cards": "Карточки заметок",
+  "Note title": "Заголовок заметки",
+  "Note title (optional)": "Заголовок (необязательно)",
+  "Leave blank to use the first phrase.": "Оставьте пустым, чтобы заголовком стала первая фраза.",
+  "Click to open this note": "Нажмите, чтобы открыть заметку",
+  "Click a card to open it. Choose a title inside, or leave it blank to use the first phrase.": "Нажмите на карточку, чтобы раскрыть заметку. Внутри можно задать заголовок или оставить поле пустым — тогда названием станет первая фраза."
 }

@@ -23,8 +23,27 @@ public sealed class NoteItem
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Text { get; set; } = "";
+    public string Title { get; set; } = "";
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
-    [JsonIgnore] public string Label => Text.Replace('\r',' ').Replace('\n',' ').Trim() is var text && text.Length>90 ? text[..90]+"…" : text;
+    private static readonly char[] phraseEnds={'.','!','?','…','\r','\n'};
+    internal static string NormalizeTitle(string? value)
+    {
+        string title=string.Join(" ",(value??"").Split((char[]?)null,StringSplitOptions.RemoveEmptyEntries));
+        int end=Math.Min(title.Length,ProductivityService.MaxNoteTitleLength);
+        if(end>0 && char.IsHighSurrogate(title[end-1]))end--;
+        return title[..end];
+    }
+    [JsonIgnore] public string DisplayTitle
+    {
+        get
+        {
+            if(!string.IsNullOrWhiteSpace(Title))return NormalizeTitle(Title);
+            string text=(Text??"").Trim();int end=text.IndexOfAny(phraseEnds);
+            if(end>=0)text=text[..(text[end] is '\r' or '\n'?end:end+1)];
+            return NormalizeTitle(text);
+        }
+    }
+    [JsonIgnore] public string Label => DisplayTitle is var text && text.Length>90 ? text[..90]+"…" : text;
 }
 
 public sealed class ShelfItem
@@ -48,6 +67,7 @@ public sealed class ClipItem
 public sealed class ProductivityData
 {
     public string Note { get; set; } = "";
+    public string NoteTitle { get; set; } = "";
     public List<NoteItem> Notes { get; set; } = new();
     public List<TaskItem> Tasks { get; set; } = new();
     public List<ShelfItem> Shelf { get; set; } = new();
@@ -58,6 +78,7 @@ public sealed class ProductivityData
 public sealed class ProductivityService : IDisposable
 {
     public const int MaxSavedNotes=100;
+    public const int MaxNoteTitleLength=160;
     public const int MaxNoteLength=50000;
     private const int MaxImageBytes=10*1024*1024;
     private readonly Store _store;
@@ -72,7 +93,7 @@ public sealed class ProductivityService : IDisposable
     private HwndSource? _source;
     private bool _disposed, _writingClipboard;
     private uint _lastWriteSequence;
-    private string _note="";
+    private string _note="",_noteTitle="";
     private bool _paused;
     private readonly uint[] _excludedFormats;
     public event Action? Changed;
@@ -93,6 +114,17 @@ public sealed class ProductivityService : IDisposable
         // The editor owns its debounce and calls Save; avoid rebuilding it on every keystroke.
         set { if(_disposed)return;var next=Bound(value,50000);if(_note==next)return;_note=next;Changed?.Invoke(); }
     }
+    public string NoteTitle
+    {
+        get=>_noteTitle;
+        // Keep spaces while typing; saved library headings are normalized separately.
+        set { if(_disposed)return;var next=BoundDraftTitle(value);if(_noteTitle==next)return;_noteTitle=next;Changed?.Invoke(); }
+    }
+    private static string BoundDraftTitle(string? value)
+    {
+        string text=Bound(value,MaxNoteTitleLength);
+        return text.Length>0 && char.IsHighSurrogate(text[^1])?text[..^1]:text;
+    }
     public ProductivityService(Store store,Action<Exception> log) : this(store,log,true) { }
 
     // Tests opt out of every native clipboard call, including registration and writes.
@@ -103,6 +135,7 @@ public sealed class ProductivityService : IDisposable
         _excludedFormats=nativeClipboard ? new[]{RegisterClipboardFormat("ExcludeClipboardContentFromMonitorProcessing"),RegisterClipboardFormat("CanIncludeInClipboardHistory"),RegisterClipboardFormat("CanUploadToCloudClipboard")} : Array.Empty<uint>();
         var data=store.Load<ProductivityData>("productivity");
         _note=Bound(data.Note,50000);
+        _noteTitle=BoundDraftTitle(data.NoteTitle);
         Notes.AddRange(data.Notes ?? new());Tasks.AddRange(data.Tasks ?? new()); Shelf.AddRange(data.Shelf ?? new()); Clips.AddRange(data.Clips ?? new());
         Normalize();
         PurgeOrphanImages();
@@ -111,7 +144,7 @@ public sealed class ProductivityService : IDisposable
     public bool Save()
     {
         if(_disposed)return false;
-        try { Normalize(); _store.Save("productivity",new ProductivityData{Note=_note,Notes=Notes,Tasks=Tasks,Shelf=Shelf,Clips=Clips});LastError=null;return true; }
+        try { Normalize(); _store.Save("productivity",new ProductivityData{Note=_note,NoteTitle=_noteTitle,Notes=Notes,Tasks=Tasks,Shelf=Shelf,Clips=Clips});LastError=null;return true; }
         catch(Exception ex) { ReportError(ex); return false; }
     }
 
@@ -119,19 +152,20 @@ public sealed class ProductivityService : IDisposable
     public bool SaveDraftToLibrary()
     {
         if(_disposed || string.IsNullOrWhiteSpace(_note))return false;
-        if(Notes.Any(n=>n.Text==_note))return Save();
+        string title=NoteItem.NormalizeTitle(_noteTitle);
+        if(Notes.Any(n=>n.Text==_note && n.Title==title))return Save();
         if(Notes.Count>=MaxSavedNotes)return false;
-        var item=new NoteItem{Text=_note};Notes.Insert(0,item);
+        var item=new NoteItem{Text=_note,Title=title};Notes.Insert(0,item);
         if(!Save()){Notes.Remove(item);return false;}
         Changed?.Invoke();return true;
     }
-    public bool UpdateNote(string id,string text)
+    public bool UpdateNote(string id,string text,string? title=null)
     {
         if(_disposed || string.IsNullOrWhiteSpace(text))return false;
         var item=Notes.FirstOrDefault(n=>n.Id==id);if(item==null)return false;
-        string next=Bound(text,MaxNoteLength);if(item.Text==next)return Save();
-        var previous=(item.Text,item.UpdatedAt);item.Text=next;item.UpdatedAt=DateTimeOffset.UtcNow;
-        if(!Save()){(item.Text,item.UpdatedAt)=previous;return false;}
+        string next=Bound(text,MaxNoteLength),nextTitle=title==null?item.Title:NoteItem.NormalizeTitle(title);if(item.Text==next && item.Title==nextTitle)return Save();
+        var previous=(item.Text,item.Title,item.UpdatedAt);item.Text=next;item.Title=nextTitle;item.UpdatedAt=DateTimeOffset.UtcNow;
+        if(!Save()){(item.Text,item.Title,item.UpdatedAt)=previous;return false;}
         Changed?.Invoke();return true;
     }
     public bool RemoveNote(string id)
@@ -149,13 +183,14 @@ public sealed class ProductivityService : IDisposable
         if(_disposed)return false;
         var item=Notes.FirstOrDefault(n=>n.Id==id);if(item==null)return false;
         NoteItem? archive=null;
-        if(!string.IsNullOrWhiteSpace(_note) && !Notes.Any(n=>n.Text==_note))
+        string title=NoteItem.NormalizeTitle(_noteTitle);
+        if(!string.IsNullOrWhiteSpace(_note) && !Notes.Any(n=>n.Text==_note && n.Title==title))
         {
             if(Notes.Count>=MaxSavedNotes)return false;
-            archive=new(){Text=_note};Notes.Insert(0,archive);
+            archive=new(){Text=_note,Title=title};Notes.Insert(0,archive);
         }
-        string previous=_note;_note=item.Text;
-        if(!Save()){_note=previous;if(archive!=null)Notes.Remove(archive);return false;}
+        var previous=(_note,_noteTitle);_note=item.Text;_noteTitle=item.Title;
+        if(!Save()){(_note,_noteTitle)=previous;if(archive!=null)Notes.Remove(archive);return false;}
         Changed?.Invoke();return true;
     }
     public bool SetTaskDone(string id,bool done)
@@ -380,12 +415,13 @@ public sealed class ProductivityService : IDisposable
     private void Normalize()
     {
         _note=Bound(_note,50000);
+        _noteTitle=BoundDraftTitle(_noteTitle);
         var notes=Notes.Where(n=>n!=null && !string.IsNullOrWhiteSpace(n.Text)).Take(MaxSavedNotes).ToList();
         var noteIds=new HashSet<string>(StringComparer.Ordinal);
         foreach(var note in notes)
         {
             if(string.IsNullOrWhiteSpace(note.Id) || note.Id.Length>128 || !noteIds.Add(note.Id)){note.Id=Guid.NewGuid().ToString("N");noteIds.Add(note.Id);}
-            note.Text=Bound(note.Text,MaxNoteLength);if(note.UpdatedAt==default)note.UpdatedAt=DateTimeOffset.UtcNow;
+            note.Text=Bound(note.Text,MaxNoteLength);note.Title=NoteItem.NormalizeTitle(note.Title);if(note.UpdatedAt==default)note.UpdatedAt=DateTimeOffset.UtcNow;
         }
         Notes.Clear();Notes.AddRange(notes);
         var tasks=Tasks.Where(t=>t!=null && !string.IsNullOrWhiteSpace(t.Text)).Take(100).ToList();

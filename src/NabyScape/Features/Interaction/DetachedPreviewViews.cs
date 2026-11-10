@@ -26,7 +26,7 @@ internal sealed class DetachedPreviewView : IDisposable
     private ComboBox? sessions;
     private Slider? volume,seek;
     private Button? toggle,previous,next;
-    private TextBox? notes,minutes;
+    private TextBox? notes,noteTitle,minutes;
     private ProgressBar? progress,memory;
     private ListBox? shelf;
     private Calendar? calendar;
@@ -89,15 +89,20 @@ internal sealed class DetachedPreviewView : IDisposable
     }
     private void BuildNotes()
     {
+        Add(UI.Caption("Note title (optional)",11,UI.Muted));noteTitle=UI.CaptionInput("Note title",app.Productivity.NoteTitle,"Leave blank to use the first phrase.");noteTitle.MaxLength=ProductivityService.MaxNoteTitleLength;noteTitle.SetResourceReference(Control.BackgroundProperty,"ControlFill");noteTitle.SetResourceReference(Control.BorderBrushProperty,"ControlBorder");Add(noteTitle);
+        noteTitle.TextChanged+=(_,_)=>{if(updating)return;app.Productivity.NoteTitle=noteTitle.Text;dirty=true;status!.Text=Localization.Text("Saving…");noteSave.Stop();noteSave.Start();};
         notes=UI.Input(Localization.Text("Shared notes document"),app.Productivity.Note);notes.SetResourceReference(Control.BackgroundProperty,"ControlFill");notes.SetResourceReference(Control.BorderBrushProperty,"ControlBorder");notes.AcceptsReturn=true;notes.TextWrapping=TextWrapping.Wrap;notes.VerticalContentAlignment=VerticalAlignment.Top;notes.VerticalScrollBarVisibility=ScrollBarVisibility.Auto;notes.MaxLength=50000;notes.MinHeight=138;Add(notes);
         notes.TextChanged+=(_,_)=>{if(updating)return;app.Productivity.Note=notes.Text;dirty=true;status!.Text=Localization.Text("Saving…");noteSave.Stop();noteSave.Start();};
         status=UI.Text(Localization.Text("Saved locally"),11,UI.Muted);Add(status);Add(Action(Localization.Text("Save"),Flush));
     }
     private void SyncNotes()
     {
-        if(notes==null || notes.Text==app.Productivity.Note)return;
-        int start=notes.SelectionStart,length=notes.SelectionLength;double offset=notes.VerticalOffset;
-        notes.Text=app.Productivity.Note;notes.Select(Math.Min(start,notes.Text.Length),Math.Min(length,Math.Max(0,notes.Text.Length-start)));notes.ScrollToVerticalOffset(offset);
+        foreach(var (editor,text) in new[]{(notes,app.Productivity.Note),(noteTitle,app.Productivity.NoteTitle)})
+        {
+            if(editor==null || editor.Text==text)continue;
+            int start=editor.SelectionStart,length=editor.SelectionLength;double offset=editor.VerticalOffset;
+            editor.Text=text;editor.Select(Math.Min(start,editor.Text.Length),Math.Min(length,Math.Max(0,editor.Text.Length-start)));editor.ScrollToVerticalOffset(offset);
+        }
     }
     private void BuildShelf()
     {

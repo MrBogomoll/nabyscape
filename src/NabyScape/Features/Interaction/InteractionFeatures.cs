@@ -25,7 +25,7 @@ public sealed partial class OverlayWindow
     private readonly DispatcherTimer coverHold=new(){Interval=TimeSpan.FromMilliseconds(500)};
     private Point coverDown;
     private readonly TextBlock peekSystem=UI.Text("",17);
-    private TextBox? mainNoteEditor;
+    private TextBox? mainNoteEditor,mainNoteTitleEditor;
     private bool syncingNote;
     private void InitializeInteractionFeatures()
     {
@@ -66,11 +66,11 @@ public sealed partial class OverlayWindow
         if(syncingNote)return;syncingNote=true;
         try
         {
-            foreach(var editor in new[]{mainNoteEditor,peekNote})
+            foreach(var (editor,text) in new[]{(mainNoteEditor,app.Productivity.Note),(peekNote,app.Productivity.Note),(mainNoteTitleEditor,app.Productivity.NoteTitle),(peekNoteTitle,app.Productivity.NoteTitle)})
             {
-                if(editor==null || editor.Text==app.Productivity.Note)continue;
+                if(editor==null || editor.Text==text)continue;
                 int start=editor.SelectionStart,length=editor.SelectionLength;double offset=editor.VerticalOffset;
-                editor.Text=app.Productivity.Note;editor.Select(Math.Min(start,editor.Text.Length),Math.Min(length,Math.Max(0,editor.Text.Length-start)));editor.ScrollToVerticalOffset(offset);
+                editor.Text=text;editor.Select(Math.Min(start,editor.Text.Length),Math.Min(length,Math.Max(0,editor.Text.Length-start)));editor.ScrollToVerticalOffset(offset);
             }
         }finally{syncingNote=false;}
     }

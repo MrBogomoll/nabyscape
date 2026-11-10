@@ -75,6 +75,48 @@ public static class ProductivityTests
             Assert(restored.Note=="  Original thought\nsecond line  " && restored.Notes.Single().Id==id && restored.Notes[0].Text=="Revised thought");
             Assert(restored.RemoveNote(id) && restored.Notes.Count==0 && !restored.RemoveNote(id));
         });
+        Check("Productivity: optional note titles persist and blank titles follow the first phrase",root=>
+        {
+            string id;
+            using(var service=Service(root))
+            {
+                service.Note="Первая фраза. Вторая мысль.";Assert(service.SaveDraftToLibrary());var note=service.Notes.Single();id=note.Id;
+                Assert(note.Title=="" && note.DisplayTitle=="Первая фраза.");
+                Assert(service.UpdateNote(id,note.Text,"  Мой   заголовок  ") && note.DisplayTitle=="Мой заголовок");
+                Assert(service.UpdateNote(id,"Новый текст. Продолжение.") && note.Title=="Мой заголовок");
+            }
+            using var restored=Service(root);var saved=restored.Notes.Single();
+            Assert(saved.Id==id && saved.Title=="Мой заголовок" && saved.Text=="Новый текст. Продолжение.");
+            Assert(restored.UpdateNote(id,saved.Text,"") && saved.DisplayTitle=="Новый текст.");
+            Assert(restored.UpdateNote(id,"Одна строка\nЕщё строка") && saved.DisplayTitle=="Одна строка");
+        });
+        Check("Productivity: shared draft title survives typing save restart and draft replacement",root=>
+        {
+            var titleProperty=typeof(ProductivityService).GetProperty("NoteTitle");Assert(titleProperty!=null);
+            string Title(ProductivityService service)=>(string)titleProperty!.GetValue(service)!;
+            void SetTitle(ProductivityService service,string title)=>titleProperty!.SetValue(service,title);
+            string id;
+            using(var service=Service(root))
+            {
+                service.Note="Содержимое заметки";SetTitle(service,"Мой ");Assert(service.Save() && Title(service)=="Мой ");
+                SetTitle(service,"Мой заголовок");Assert(service.SaveDraftToLibrary());id=service.Notes.Single().Id;
+                Assert(service.Notes[0].Title=="Мой заголовок" && service.SaveDraftToLibrary() && service.Notes.Count==1);
+                SetTitle(service,"Другой заголовок");Assert(service.SaveDraftToLibrary() && service.Notes.Count==2);
+                service.Note="Новый черновик";SetTitle(service,"Не потерять");Assert(service.OpenNoteInDraft(id));
+                Assert(service.Note=="Содержимое заметки" && Title(service)=="Мой заголовок" && service.Notes.Any(n=>n.Text=="Новый черновик" && n.Title=="Не потерять"));
+            }
+            using var restored=Service(root);Assert(Title(restored)=="Мой заголовок");
+            SetTitle(restored,"");restored.Note="Первая фраза. Далее";Assert(restored.SaveDraftToLibrary() && restored.Notes[0].DisplayTitle=="Первая фраза.");
+        });
+        Check("Productivity: old notes and malformed titles normalize without changing content",root=>
+        {
+            var stamp=DateTimeOffset.Parse("2026-11-10T08:00:00Z");
+            new Store(root).Save("productivity",new ProductivityData{Notes=new(){new(){Id="old",Text="Без заголовка! Потом",Title=null!,UpdatedAt=stamp},new(){Id="long",Text="Текст",Title=new string('я',2000)}}});
+            using var service=Service(root);var old=service.Notes.Single(n=>n.Id=="old");
+            Assert(old.Title=="" && old.DisplayTitle=="Без заголовка!" && old.Text=="Без заголовка! Потом" && old.UpdatedAt==stamp);
+            Assert(service.Notes.Single(n=>n.Id=="long").Title.Length==ProductivityService.MaxNoteTitleLength);
+            Assert(NoteItem.NormalizeTitle(new string('t',159)+"😀")==new string('t',159));
+        });
         Check("Productivity: opening a saved note preserves the previous draft across restart",root=>
         {
             using(var service=Service(root))
@@ -108,11 +150,11 @@ public static class ProductivityTests
         Check("Productivity: saved-note mutations roll back when storage is unavailable",root=>
         {
             using var service=Service(root);service.Note="Saved";Assert(service.SaveDraftToLibrary());var note=service.Notes.Single();
-            service.Note="Keep draft";
+            Assert(service.UpdateNote(note.Id,note.Text,"Keep title"));service.Note="Keep draft";service.NoteTitle="Keep draft title";
             using var locked=new FileStream(Path.Combine(root,"productivity.json"),FileMode.Open,FileAccess.Read,FileShare.Read);
-            Assert(!service.OpenNoteInDraft(note.Id) && service.Note=="Keep draft" && service.Notes.Count==1);
+            Assert(!service.OpenNoteInDraft(note.Id) && service.Note=="Keep draft" && service.NoteTitle=="Keep draft title" && service.Notes.Count==1);
             Assert(!service.SaveDraftToLibrary() && service.Notes.Count==1);
-            Assert(!service.UpdateNote(note.Id,"Do not apply") && note.Text=="Saved");
+            Assert(!service.UpdateNote(note.Id,"Do not apply","Do not rename") && note.Text=="Saved" && note.Title=="Keep title");
             Assert(!service.RemoveNote(note.Id) && service.Notes.Single().Id==note.Id);
         });
         Check("Productivity: task completion notifies shared views and persists",root=>

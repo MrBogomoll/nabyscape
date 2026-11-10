@@ -24,6 +24,7 @@ public sealed partial class OverlayWindow
     private readonly Dictionary<string,(TextBlock time,TextBlock detail,Button toggle,ProgressBar progress)> peekClocks=new();
     private readonly TextBlock peekEventTitle=UI.Text("",16),peekEventTime=UI.Text("",11,UI.Muted),peekShelfName=UI.Text("",14),peekShelfCount=UI.Text("",11,UI.Muted);
     private TextBox peekNote=null!;
+    private TextBox peekNoteTitle=null!;
     private Button? peekNoteSave;
     private Button peekPrevious=null!,peekNext=null!,peekJoin=null!,peekShelfFile=null!,peekMute=null!,peekTrackPrevious=null!,peekTrackNext=null!,peekOutput=null!;
     private Slider peekVolume=null!;
@@ -41,7 +42,7 @@ public sealed partial class OverlayWindow
     private string? peekFilePath;
     private string? peekShelfArtPath;
     private readonly Image peekShelfArt=new(){Width=44,Height=44,Stretch=Stretch.Uniform,Margin=new(0,0,12,0),Visibility=Visibility.Collapsed};
-    private bool PeekInteractionActive=>OwnedPopupOpen || dockEditing || peekDragging || peekTouching || peekNote?.IsKeyboardFocusWithin==true;
+    private bool PeekInteractionActive=>OwnedPopupOpen || dockEditing || peekDragging || peekTouching || peekNote?.IsKeyboardFocusWithin==true || peekNoteTitle?.IsKeyboardFocusWithin==true;
     internal string PeekPage=>peekId;
     internal string[] HoverDeckIds=>PeekPages();
     internal bool PeekTabSafe=>peekViews.Where(pair=>pair.Key!=peekId).All(pair=>KeyboardNavigation.GetTabNavigation(pair.Value)==KeyboardNavigationMode.None);
@@ -166,13 +167,13 @@ public sealed partial class OverlayWindow
     {
         if(!peeking || noticeShowing || assistantPeeking)return false;
         // Only the focused multiline editor keeps its native vertical scrolling.
-        if(!VisibilityPolicy.CarouselOwnsWheel(peeking,horizontal,peekNote?.IsKeyboardFocusWithin==true,IsPeekNoteSource(source)))return false;
+        if(!VisibilityPolicy.CarouselOwnsWheel(peeking,horizontal,peekNote?.IsKeyboardFocusWithin==true || peekNoteTitle?.IsKeyboardFocusWithin==true,IsPeekNoteSource(source)))return false;
         int direction=peekWheel.Push(horizontal?delta:-delta,Environment.TickCount64);
         if(direction!=0)NavigatePeek(direction,true);
         return true;
     }
     private bool IsPeekNoteSource(DependencyObject? source)
-    {for(var node=source;node!=null;node=node is Visual?VisualTreeHelper.GetParent(node):LogicalTreeHelper.GetParent(node))if(node==peekNote)return true;return false;}
+    {for(var node=source;node!=null;node=node is Visual?VisualTreeHelper.GetParent(node):LogicalTreeHelper.GetParent(node))if(node==peekNote || node==peekNoteTitle)return true;return false;}
     private void ApplyPeekGeometry()
     {
         if(assistantPeeking){LayoutAssistantPeek();return;}
@@ -230,7 +231,11 @@ public sealed partial class OverlayWindow
     }
     private FrameworkElement BuildPeekNote()
     {
-        var page=new StackPanel();var label=UI.Text(Localization.Text("Quick note"),11,UI.Muted);label.Margin=new(0,3,0,10);page.Children.Add(label);
+        var page=new StackPanel();
+        peekNoteTitle=UI.CaptionInput("Note title",app.Productivity.NoteTitle,"Leave blank to use the first phrase.");peekNoteTitle.MaxLength=ProductivityService.MaxNoteTitleLength;peekNoteTitle.Height=28;peekNoteTitle.Padding=new(9,3,9,3);peekNoteTitle.Margin=new(0,0,0,6);
+        var titleHost=new Grid();titleHost.Children.Add(peekNoteTitle);var titleHint=UI.Caption("Note title (optional)",11,UI.Muted);titleHint.IsHitTestVisible=false;titleHint.VerticalAlignment=VerticalAlignment.Center;titleHint.Margin=new(10,0,10,0);titleHost.Children.Add(titleHint);page.Children.Add(titleHost);
+        void TitleHint()=>titleHint.Visibility=peekNoteTitle.Text.Length==0?Visibility.Visible:Visibility.Collapsed;TitleHint();
+        peekNoteTitle.TextChanged+=(_,_)=>{TitleHint();if(syncingNote)return;app.Productivity.NoteTitle=peekNoteTitle.Text;noteSave.Stop();noteSave.Start();if(peekNoteSave!=null)peekNoteSave.Content=Localization.Text("Save note");};peekNoteTitle.PreviewMouseLeftButtonDown+=(_,_)=>{Activate();PromotePeek();};
         peekNote=UI.Input(Localization.Text("Preview note draft"),app.Productivity.Note);peekNote.TextChanged+=(_,_)=>{if(syncingNote)return;app.Productivity.Note=peekNote.Text;noteSave.Stop();noteSave.Start();if(peekNoteSave!=null){peekNoteSave.Content=Localization.Text("Save note");peekNoteSave.IsEnabled=!string.IsNullOrWhiteSpace(peekNote.Text);}};peekNote.Height=53;peekNote.MaxLength=50000;peekNote.Padding=new(9,7,9,7);peekNote.Margin=new(0);peekNote.AcceptsReturn=true;peekNote.TextWrapping=TextWrapping.Wrap;peekNote.VerticalContentAlignment=VerticalAlignment.Top;peekNote.VerticalScrollBarVisibility=ScrollBarVisibility.Auto;peekNote.PreviewMouseLeftButtonDown+=(_,_)=>{Activate();PromotePeek();};page.Children.Add(peekNote);
         var actions=new StackPanel{Orientation=Orientation.Horizontal,Margin=new(0,9,0,0)};var save=PlainPeekButton(Localization.Text("Save preview note"),SavePeekNote);save.Content=Localization.Text("Save note");save.FontSize=12;peekNoteSave=save;save.IsEnabled=!string.IsNullOrWhiteSpace(peekNote.Text);actions.Children.Add(save);var open=PlainPeekButton(Localization.Text("Open all notes"),()=>{FlushNotes();app.ShowSettings("Notes");});open.Content=Localization.Text("All notes");open.Foreground=UI.Muted;open.FontSize=12;open.Margin=new(20,0,0,0);actions.Children.Add(open);page.Children.Add(actions);return page;
     }
