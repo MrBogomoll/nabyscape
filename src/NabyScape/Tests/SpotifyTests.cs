@@ -60,6 +60,30 @@ internal static class SpotifyTests
             };
             Assert(!f.Service.ToggleAsync().GetAwaiter().GetResult() && !f.Requests.Any(r=>r.Method==HttpMethod.Put));
         });
+        test("Spotify checks a new track before the music panel is opened",()=>
+        {
+            using var f=new Fixture();Assert(f.Service.ConnectAsync(Fixture.Client).GetAwaiter().GetResult());f.Saved=true;
+            f.Service.MediaChanged();Assert(f.Service.Saved==true && f.Service.CanLike && f.Requests.Any(r=>r.Path.EndsWith("/contains")));
+        });
+        test("Spotify briefly retries stale metadata and bounds retries without library writes",()=>Task.Run(async()=>
+        {
+            using var f=new Fixture();Assert(await f.Service.ConnectAsync(Fixture.Client));f.ApiTitle="Предыдущая песня";
+            int lookups=0;f.Intercept=(r,c)=>{if(r.RequestUri!.AbsolutePath.EndsWith("currently-playing") && ++lookups==2)f.ApiTitle=f.Local.Title;return null;};
+            await f.Service.RefreshAsync();for(int i=0;i<100 && f.Service.Saved==null;i++)await Task.Delay(10);
+            Assert(lookups==2 && f.Service.Saved==false && !f.Requests.Any(r=>r.Method==HttpMethod.Put || r.Method==HttpMethod.Delete));
+            using var wrong=new Fixture();Assert(await wrong.Service.ConnectAsync(Fixture.Client));wrong.ApiTitle="Всегда другой трек";
+            await wrong.Service.RefreshAsync();await Task.Delay(1300);
+            Assert(wrong.Service.Saved==null && !wrong.Service.CanLike && wrong.Requests.Count(r=>r.Path.EndsWith("currently-playing"))==4);
+        }).GetAwaiter().GetResult());
+        test("Spotify immediately follows a track change during an in-flight lookup",()=>Task.Run(async()=>
+        {
+            using var f=new Fixture();Assert(await f.Service.ConnectAsync(Fixture.Client));
+            var waiting=new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);var old=f.TrackResponse();bool first=true;
+            f.Intercept=(r,c)=>{if(first && r.RequestUri!.AbsolutePath.EndsWith("currently-playing")){first=false;return waiting.Task;}return null;};
+            var pending=f.Service.RefreshAsync();f.Local=f.Local with{Title="Следующая песня"};f.ApiTitle=f.Local.Title;f.Saved=true;f.Service.MediaChanged();waiting.SetResult(old);await pending;
+            for(int i=0;i<50 && f.Service.Saved!=true;i++)await Task.Delay(10);
+            Assert(f.Service.Saved==true && f.Service.CanLike && f.Requests.Count(r=>r.Path.EndsWith("currently-playing"))==2);
+        }).GetAwaiter().GetResult());
         test("Spotify disconnect retires an old request and cannot restore its heart or connection",()=>
         {
             using var f=new Fixture();Assert(f.Service.ConnectAsync(Fixture.Client).GetAwaiter().GetResult());
@@ -118,12 +142,12 @@ internal static class SpotifyTests
         internal SpotifyMediaSnapshot Local=new("Spotify.exe","Песня","Артист",180);
         internal readonly List<(HttpMethod Method,string Path)> Requests=new();
         internal Func<HttpRequestMessage,CancellationToken,Task<HttpResponseMessage>?>? Intercept;
-        internal bool Saved;internal int TokenCalls;internal string TokenScopes=SpotifyProtocol.Scopes;
+        internal string ApiTitle="Песня";internal bool Saved;internal int TokenCalls;internal string TokenScopes=SpotifyProtocol.Scopes;
         internal Fixture(){Directory.CreateDirectory(Root);Service=new(new Store(Root),Keys,()=>Local,new HttpClient(new Handler(Respond)),Authorize);}
         internal Task<string> Authorize(Uri uri,string state,CancellationToken cancel)
         {if(uri.Host!="accounts.spotify.com" || !uri.Query.Contains("code_challenge_method=S256") || !uri.Query.Contains("state="+state))throw new Exception("Invalid authorization URI.");return Task.FromResult("mock-authorization-code");}
         private static HttpResponseMessage Json(object value)=>new(HttpStatusCode.OK){Content=new StringContent(JsonSerializer.Serialize(value))};
-        internal HttpResponseMessage TrackResponse()=>Json(new{item=new{type="track",uri="spotify:track:0123456789ABCDEFGHIJKL",name="Песня",artists=new[]{new{name="Артист"}},duration_ms=180000}});
+        internal HttpResponseMessage TrackResponse()=>Json(new{item=new{type="track",uri="spotify:track:0123456789ABCDEFGHIJKL",name=ApiTitle,artists=new[]{new{name="Артист"}},duration_ms=180000}});
         internal Task<HttpResponseMessage> Respond(HttpRequestMessage request,CancellationToken cancel)
         {
             Requests.Add((request.Method,request.RequestUri!.AbsolutePath));var intercepted=Intercept?.Invoke(request,cancel);if(intercepted!=null)return intercepted;

@@ -31,7 +31,10 @@ internal sealed class SpotifyService : IDisposable
     private SpotifyMediaSnapshot? observed;
     private SpotifyTrack? track;
     private int generation;
-    private bool disposed,suspended;
+    private bool disposed,suspended,refreshQueued;
+    private CancellationTokenSource? activeRead;
+    private int syncRetries;
+    private DateTimeOffset lastChecked;
     internal event Action? Changed;
     internal string ClientId {get;private set;}="";
     internal bool Connected=>!disposed && refresh.Length>0;
@@ -57,12 +60,16 @@ internal sealed class SpotifyService : IDisposable
     internal void SetDemand(object consumer,bool visible)
     {
         if(disposed)return;bool added=visible?consumers.Add(consumer):false;if(!visible)consumers.Remove(consumer);
-        if(consumers.Count>0 && Connected && !suspended && networkEnabled){poll.Start();if(added)_=RefreshAsync();}else poll.Stop();
+        if(consumers.Count>0 && Connected && !suspended && networkEnabled){poll.Start();if(added && (!Saved.HasValue || DateTimeOffset.UtcNow-lastChecked>TimeSpan.FromSeconds(5)))_=RefreshAsync();}else poll.Stop();
     }
     internal void MediaChanged()
     {
-        if(disposed)return;var current=snapshot();if(current==observed)return;observed=current;track=null;Saved=null;Changed?.Invoke();
-        if(consumers.Count>0 && Connected && SelectedSpotify)_=RefreshAsync();
+        if(disposed)return;var current=snapshot();if(current==observed)return;observed=current;track=null;Saved=null;syncRetries=0;
+        // Resolve the new song while the panel is closed too; cancel obsolete reads,
+        // never mutations, and do not lose a refresh behind the single-request gate.
+        bool resolve=Connected && SelectedSpotify && networkEnabled;
+        if(resolve)refreshQueued=true;activeRead?.Cancel();Changed?.Invoke();
+        if(resolve && !Busy){refreshQueued=false;_=RefreshAsync();}
     }
     internal void CancelLogin()=>login.Cancel();
     internal async Task<bool> ConnectAsync(string id)
@@ -104,7 +111,7 @@ internal sealed class SpotifyService : IDisposable
     {
         if(disposed)return false;
         // Stop processing immediately, even when either durable store is unavailable.
-        generation++;lifetime.Cancel();lifetime.Dispose();lifetime=new();login.Cancel();access=refresh="";track=null;Saved=null;nextRequest=default;suspended=false;poll.Stop();
+        generation++;lifetime.Cancel();lifetime.Dispose();lifetime=new();login.Cancel();access=refresh="";track=null;Saved=null;nextRequest=default;suspended=false;poll.Stop();refreshQueued=false;
         bool saved=true,removed=true;
         try{store.Save("spotify-connection",new SpotifyConnectionData{ClientId=ClientId,Enabled=false});}catch{saved=false;}
         try{keys.Remove(CredentialId);}catch{removed=false;}
@@ -115,28 +122,41 @@ internal sealed class SpotifyService : IDisposable
     internal Task<bool> ToggleAsync()=>Run(true);
     private async Task<bool> Run(bool toggle)
     {
-        if(disposed || !Connected || suspended || !networkEnabled || DateTimeOffset.UtcNow<nextRequest || !SelectedSpotify || !gate.Wait(0))return false;
+        if(disposed || !Connected || suspended || !networkEnabled || DateTimeOffset.UtcNow<nextRequest || !SelectedSpotify)return false;
+        if(!gate.Wait(0)){if(!toggle)refreshQueued=true;return false;}
         int epoch=generation;var local=snapshot()!;Busy=true;Changed?.Invoke();
-        using var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);cancel.CancelAfter(TimeSpan.FromSeconds(20));
+        using var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);cancel.CancelAfter(TimeSpan.FromSeconds(20));if(!toggle)activeRead=cancel;
         try
         {
             using var playing=await Send(HttpMethod.Get,"me/player/currently-playing",epoch,cancel.Token);
             Check(epoch);SameSong(local);
-            if(playing.StatusCode==HttpStatusCode.NoContent){track=null;Saved=null;Status="Spotify has no current track.";return false;}
+            if(playing.StatusCode==HttpStatusCode.NoContent){track=null;Saved=null;Status="Spotify has no current track.";await RetryTrackLookup(toggle,cancel.Token);return false;}
             using var json=JsonDocument.Parse(await ReadBody(playing.Content,cancel.Token));
-            if(!json.RootElement.TryGetProperty("item",out var item) || item.ValueKind!=JsonValueKind.Object || !item.TryGetProperty("type",out var type) || type.GetString()!="track"){track=null;Saved=null;Status="Spotify has no current track.";return false;}
+            if(!json.RootElement.TryGetProperty("item",out var item) || item.ValueKind!=JsonValueKind.Object || !item.TryGetProperty("type",out var type) || type.GetString()!="track"){track=null;Saved=null;Status="Spotify has no current track.";await RetryTrackLookup(toggle,cancel.Token);return false;}
             var found=new SpotifyTrack(item.GetProperty("uri").GetString()??"",item.GetProperty("name").GetString()??"",item.GetProperty("artists").EnumerateArray().Select(a=>a.GetProperty("name").GetString()??"").ToArray(),item.GetProperty("duration_ms").GetDouble()/1000);
-            if(!SpotifyProtocol.Matches(found,local)){track=null;Saved=null;Status="Spotify is playing a different track. Wait or select Spotify.";return false;}
+            if(!SpotifyProtocol.Matches(found,local)){track=null;Saved=null;Status="Spotify is playing a different track. Wait or select Spotify.";await RetryTrackLookup(toggle,cancel.Token);return false;}
             string query="?uris="+Uri.EscapeDataString(found.Uri);
             using var contains=await Send(HttpMethod.Get,"me/library/contains"+query,epoch,cancel.Token);
             using var flags=JsonDocument.Parse(await ReadBody(contains.Content,cancel.Token));var array=flags.RootElement;
             if(array.ValueKind!=JsonValueKind.Array || array.GetArrayLength()!=1 || array[0].ValueKind is not (JsonValueKind.True or JsonValueKind.False))throw new SpotifyFailure("Spotify returned an invalid response. Try again.");
             bool saved=array[0].GetBoolean();Check(epoch);SameSong(local);
             if(toggle){using var changed=await Send(saved?HttpMethod.Delete:HttpMethod.Put,"me/library"+query,epoch,cancel.Token,local);Check(epoch);SameSong(local);saved=!saved;}
-            track=found;Saved=saved;Status=toggle?(saved?"Added to Liked Songs.":"Removed from Liked Songs."):"Connected to Spotify.";return true;
+            track=found;Saved=saved;lastChecked=DateTimeOffset.UtcNow;syncRetries=0;Status=toggle?(saved?"Added to Liked Songs.":"Removed from Liked Songs."):"Connected to Spotify.";return true;
         }
         catch(Exception ex){if(epoch==generation){Saved=null;track=null;Status=FailureMessage(ex,false);}return false;}
-        finally{Busy=false;gate.Release();if(!disposed)Changed?.Invoke();}
+        finally
+        {
+            if(ReferenceEquals(activeRead,cancel))activeRead=null;
+            Busy=false;gate.Release();bool again=refreshQueued;refreshQueued=false;
+            if(!disposed){Changed?.Invoke();if(again)_=RefreshAsync();}
+        }
+    }
+    private async Task RetryTrackLookup(bool toggle,CancellationToken cancel)
+    {
+        // Spotify metadata can trail Windows at a track boundary. Retry only reads,
+        // briefly and a bounded number of times; library writes are never replayed.
+        if(toggle || syncRetries++>=3)return;
+        await Task.Delay(300,cancel);refreshQueued=true;
     }
     private void SameSong(SpotifyMediaSnapshot original){if(snapshot()!=original)throw new SpotifyFailure("The track changed. Try again.");}
     private void Check(int epoch){if(disposed || epoch!=generation)throw new OperationCanceledException();}

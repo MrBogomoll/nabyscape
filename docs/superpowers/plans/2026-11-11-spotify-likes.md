@@ -21,3 +21,9 @@ User requested a visible settings exit button, heart-only hover/loading states, 
 Validation: 631 self-tests passed. Targeted UI checks cover exact save/remove, both theme contrast, middle-panel geometry/click routing, hidden ID, eye/edit synchronization and visible settings exit. Mock Spotify requests never change the real user's library. Real account authentication is user-controlled; no account token or personal Client ID belongs in the repository.
 
 Final UI verification: 18 Spotify UI checks and 124 theme checks passed. Installed executable hash matches the tested publish. All five existing profile files, including Spotify connection data, retained their hashes during installation.
+
+## Track-change latency follow-up (1.1.2)
+
+An in-flight read could consume the single-request gate and drop a newer track refresh until the six-second periodic tick. Queue a latest-state read after the current request, cancel obsolete reads on metadata changes (never replay mutations), and prefetch once per track even with the music panel closed. Periodic polling still requires a visible consumer. Reopening a panel reuses a recently checked state. Brief bounded read retries bridge stale currently-playing metadata without guessing a URI or retrying library writes. The heart retains its normal opacity while a background read disables input.
+
+Regression checks cover closed-panel prefetch, track changes during an old response, bounded stale-metadata recovery, no library writes during lookup, and stable heart opacity while HTTP is pending.

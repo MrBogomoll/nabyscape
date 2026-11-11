@@ -46,5 +46,6 @@
   "Connect once to add and remove the current song in Spotify Liked Songs using the heart on the music panel.": "Подключите Spotify один раз, чтобы сердечком на музыкальной панели добавлять текущую песню в «Любимые» и убирать её оттуда.",
   "Show Spotify Client ID": "Показать Client ID Spotify",
   "Hide Spotify Client ID": "Скрыть Client ID Spotify",
-  "Done with settings": "Закрыть настройки"
+  "Done with settings": "Закрыть настройки",
+  "Checking Spotify saved status": "Проверяем, есть ли песня в «Любимых»"
 }

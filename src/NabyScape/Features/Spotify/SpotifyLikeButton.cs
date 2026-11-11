@@ -16,7 +16,8 @@ internal sealed class SpotifyLikeButton : Button
         var area=new FrameworkElementFactory(typeof(Border));area.SetValue(Border.BackgroundProperty,Brushes.Transparent);
         var content=new FrameworkElementFactory(typeof(ContentPresenter));content.SetValue(HorizontalAlignmentProperty,HorizontalAlignment.Center);content.SetValue(VerticalAlignmentProperty,VerticalAlignment.Center);area.AppendChild(content);
         Template=new ControlTemplate(typeof(Button)){VisualTree=area};FocusVisualStyle=null;Cursor=System.Windows.Input.Cursors.Hand;
-        IsEnabledChanged+=(_,_)=>heart.Opacity=IsEnabled?1:.5;
+        // Keep the known heart visually stable while a background check is in flight.
+        IsEnabledChanged+=(_,_)=>heart.Opacity=1;
         GotKeyboardFocus+=(_,_)=>heart.StrokeThickness=2;LostKeyboardFocus+=(_,_)=>heart.StrokeThickness=1.5;
         Loaded+=(_,_)=>{if(!subscribed){app.Spotify.Changed+=Update;subscribed=true;}Update();};
         Unloaded+=(_,_)=>{if(subscribed){app.Spotify.Changed-=Update;subscribed=false;}app.Spotify.SetDemand(this,false);};
@@ -29,8 +30,8 @@ internal sealed class SpotifyLikeButton : Button
         var spotify=app.Spotify;Visibility=spotify.SelectedSpotify?Visibility.Visible:Visibility.Collapsed;
         IsEnabled=!spotify.Busy && (!spotify.Connected || spotify.CanLike);
         heart.SetResourceReference(Shape.StrokeProperty,"BodyText");if(spotify.Saved==true)heart.SetResourceReference(Shape.FillProperty,"BodyText");else heart.Fill=Brushes.Transparent;
-        ToolTip=Localization.Text(!spotify.Connected?"Connect Spotify to save songs.":spotify.CanLike?(spotify.Saved==true?"Remove from Spotify Liked Songs":"Add to Spotify Liked Songs"):spotify.Status);
-        UI.Named(this,(string)ToolTip);System.Windows.Automation.AutomationProperties.SetItemStatus(this,Localization.Text(spotify.Saved==true?"Saved":"Not saved"));
+        ToolTip=Localization.Text(!spotify.Connected?"Connect Spotify to save songs.":!spotify.Saved.HasValue && spotify.Busy?"Checking Spotify saved status":spotify.CanLike?(spotify.Saved==true?"Remove from Spotify Liked Songs":"Add to Spotify Liked Songs"):spotify.Status);
+        UI.Named(this,(string)ToolTip);System.Windows.Automation.AutomationProperties.SetItemStatus(this,Localization.Text(spotify.Saved.HasValue?(spotify.Saved==true?"Saved":"Not saved"):"Checking Spotify saved status"));
         app.Spotify.SetDemand(this,IsLoaded && IsVisible && spotify.Connected);
     }
 }

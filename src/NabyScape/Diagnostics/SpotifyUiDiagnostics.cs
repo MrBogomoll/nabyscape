@@ -16,9 +16,10 @@ internal static class SpotifyUiDiagnostics
 {
     private sealed class Handler : HttpMessageHandler
     {
-        internal bool Saved;internal int Mutations;
+        internal bool Saved;internal int Mutations;internal TaskCompletionSource<HttpResponseMessage>? Pending;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken cancel)
         {
+            if(Pending!=null && request.RequestUri!.AbsolutePath.EndsWith("currently-playing"))return Pending.Task;
             object result;
             if(request.RequestUri!.Host=="accounts.spotify.com")result=new{access_token="demo-access",refresh_token="demo-refresh",expires_in=3600,scope=SpotifyProtocol.Scopes};
             else if(request.RequestUri.AbsolutePath.EndsWith("currently-playing"))result=new{item=new{type="track",uri="spotify:track:0123456789ABCDEFGHIJKL",name="Тестовая песня",artists=new[]{new{name="Демонстрация"}},duration_ms=180000}};
@@ -46,6 +47,9 @@ internal static class SpotifyUiDiagnostics
             host=new Window{Content=surface,Width=320,Height=150,ShowActivated=false,Title="NabyScape · Spotify UI",WindowStyle=WindowStyle.None,AllowsTransparency=true,Background=Brushes.Transparent};host.Show();await Task.Delay(90);
             check("Spotify heart reads initial library state",heart.IsVisible && heart.IsEnabled && demo.Saved==false);
             check("Spotify heart uses its own chrome without native square states",heart.ReadLocalValue(Control.TemplateProperty)!=DependencyProperty.UnsetValue);
+            var waiting=new TaskCompletionSource<HttpResponseMessage>();handler.Pending=waiting;var checking=demo.RefreshAsync();
+            check("Background Spotify checks do not dim the heart",!heart.IsEnabled && ((System.Windows.Shapes.Path)heart.Content).Opacity==1);
+            handler.Pending=null;waiting.SetResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent(JsonSerializer.Serialize(new{item=new{type="track",uri="spotify:track:0123456789ABCDEFGHIJKL",name="Тестовая песня",artists=new[]{new{name="Демонстрация"}},duration_ms=180000}}))});await checking;
             heart.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Task.Delay(80);
             check("Spotify heart saves the exact track once",handler.Saved && handler.Mutations==1 && demo.Saved==true && heart.IsEnabled);
             foreach(string theme in new[]{"Light","Dark"})
