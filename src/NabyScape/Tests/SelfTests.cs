@@ -27,6 +27,7 @@ internal static class SelfTests
             Environment.ExitCode=failed==0?0:1;
         }
         WpfOptimizationTests.Run(Test);
+        SpotifyTests.Run(Test);
         if(Array.Exists(args,a=>a=="--capture-optimization-tests-only"))
         {AssistantCaptureTests.Run(Test);Finish();return;}
         Test("Factory preferences match the selected daily setup without personal content",()=>

@@ -150,6 +150,7 @@ internal static class Diagnostics
 
             if(Environment.GetCommandLineArgs().Contains("--assistant-presentation-only")){await AssistantPresentationDiagnostics.Run(app,overlay,directory,Check);return;}
 
+            if(Environment.GetCommandLineArgs().Contains("--spotify-ui-only")){await SpotifyUiDiagnostics.Run(app,overlay,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--media-footer-only")){await MediaFooterDiagnostics.Run(app,overlay,directory,Check);return;}
 
             if(Environment.GetCommandLineArgs().Contains("--minimal-widgets-only")){await MinimalWidgetsDiagnostics.Run(app,overlay,directory,Check);return;}

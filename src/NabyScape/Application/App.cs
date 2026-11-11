@@ -66,6 +66,7 @@ public sealed partial class App : Application
     public Settings Settings { get; private set; }=null!;
     public SessionState Session { get; private set; }=null!;
     public MediaService Media { get; private set; }=null!;
+    internal SpotifyService Spotify {get;private set;}=null!;
     public BrightnessService Brightness { get; private set; }=null!;
     public string BrightnessStatus=>Brightness?.Status??Localization.Text("Brightness feedback unavailable");
     public AudioService Audio { get; private set; }=null!;
@@ -133,6 +134,8 @@ public sealed partial class App : Application
         DispatcherUnhandledException+=(_,args)=> { Store.Log(args.Exception);args.Handled=true;Notify(Localization.Text("Something went wrong"), Localization.Text("The operation failed. Details were saved to errors.log.")); };
         Audio=new(Store.Log){SpectrumEnabled=Settings.WaveformSource=="Spectrum"};Media=new(Store.Log);Productivity=new(Store,Store.Log,diagnosticPath==null);Productivity.SetClipboardEnabled(Settings.ClipboardHistory);
         AmbientAudio=new(this);Weather=new(Store);
+        Spotify=new(Store,diagnosticPath!=null?new AssistantMemoryKeys():new AssistantKeys(),()=>Media.Selected is {} session?new SpotifyMediaSnapshot(session.SourceAppUserModelId,Media.Title,Media.Artist,Media.Timeline().duration):null,networkEnabled:diagnosticPath==null);
+        Media.Changed+=Spotify.MediaChanged;
         Brightness=new();Brightness.Start(diagnosticPath==null && Settings.ReactiveFeedback && Settings.BrightnessFeedback);
         Calendar=new(Store);Awake=new();
         Assistant=new(this,diagnosticPath!=null?new AssistantMemoryKeys():null);
@@ -258,6 +261,7 @@ public sealed partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         DisposeRuntimeRecovery();
+        Spotify?.Dispose();
         if(Assistant!=null)Assistant.Changed-=RefreshAssistantTray;Assistant?.Dispose();assistantWindow?.Close();
         welcomeWindow?.Close();tick?.Stop();Weather?.Dispose();AmbientAudio?.Dispose();Lyrics.Dispose();CountdownAudio.Dispose();Downloads?.Dispose();ExternalNotifications?.Dispose();Updates?.Dispose();
         if(Session!=null) SaveSession();

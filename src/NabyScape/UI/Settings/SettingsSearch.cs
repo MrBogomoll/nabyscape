@@ -22,7 +22,7 @@ public sealed partial class SettingsWindow
         "Content"=>new[]{"Feature usage","Enabled widgets & order","Individual tools","Hover pages"},
         "Notes"=>new[]{"Quick draft","Saved notes"},"Tasks"=>new[]{"Tasks"},
         "Controls"=>new[]{"Hover & swipe","Panel navigation","Drag to Island","Detachable previews","Closed cover gestures","Notch gestures","Global hotkey"},
-        "Audio"=>new[]{"Visualizer","Lyrics","Closed media display","Volume mixer","Waveform source","Live signal","Live feedback","Audio behavior","Header wheel"},
+        "Audio"=>new[]{"Spotify","Visualizer","Lyrics","Closed media display","Volume mixer","Waveform source","Live signal","Live feedback","Audio behavior","Header wheel"},
         "System"=>new[]{"Clock","Monitor details"},"Launch"=>new[]{"Launch display","Shortcuts"},"AI"=>new[]{"AI companion"},
         "Application"=>new[]{"Language & accessibility","Updates","Behavior","Local storage","Private diagnostics","Reset preferences","About NabyScape"},_=>Array.Empty<string>()
     });
@@ -57,7 +57,7 @@ public sealed partial class SettingsWindow
         Add("Automatic hide & tuck","Visibility","Automatic tucking","","tuck hide fullscreen fullscreen otomatis sembunyi dock");
         Add("YouTube previews","Visibility","Automatic activity","Automatic browser media previews","youtube browser hover popup preview chrome ganggu");
         Add("Keyboard shortcut","Controls","Global hotkey","","keyboard hotkey shortcut tombol pintasan buka dock");
-        Add("Lyrics","Audio","Lyrics","","lyrics lirik spotify karaoke lagu");
+        Add("Lyrics","Audio","Lyrics","","lyrics lirik spotify karaoke lagu");Add("Spotify Liked Songs","Audio","Spotify","Spotify Client ID","spotify heart liked favorite saved songs спотифай лайк любимые сердечко");
         Add("Audio waveform","Audio","Visualizer","","waveform visualizer spectrum gelombang audio reaktif");
         Add("Speaker & volume","Audio","Volume mixer","","speaker volume suara mixer microphone output device spotify");
         Add("Clipboard capture","Clipboard","Clipboard history","Save text & image history locally","clipboard history salin copy paste riwayat gambar capture");

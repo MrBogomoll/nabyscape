@@ -17,7 +17,7 @@ public sealed partial class OverlayWindow
             {
                 // A session may disappear after its menu was rendered.
                 if(app.Media.Sessions.Contains(session))app.Media.Select(session);
-            }))).ToArray(),()=>app.Media.SourceSelectionId,BuildVolumePopover);
+            }))).ToArray(),()=>app.Media.SourceSelectionId,BuildVolumePopover,WidgetOn("media")?new SpotifyLikeButton(app):null);
         mediaControls.LayoutRequested+=QueueMediaLayout;mediaControls.SizeChanged+=(_,_)=>QueueMediaLayout();RefreshMediaControls(true);return mediaControls;
     }
     private FrameworkElement BuildVolumePopover()

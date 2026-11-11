@@ -33,13 +33,14 @@ internal sealed class MediaControls : Grid
     internal Button SourceButton=>source;
     internal Button VolumeButton=>level;
 
-    internal MediaControls(StackPanel content,bool media,bool volume,Func<IReadOnlyList<MediaSourceChoice>> sources,Func<string?> selected,Func<FrameworkElement> volumeContent)
+    internal MediaControls(StackPanel content,bool media,bool volume,Func<IReadOnlyList<MediaSourceChoice>> sources,Func<string?> selected,Func<FrameworkElement> volumeContent,FrameworkElement? favorite=null)
     {
         this.sources=sources;this.selected=selected;this.volumeContent=volumeContent;
         footer.ColumnDefinitions.Add(new());footer.ColumnDefinitions.Add(new(){Width=GridLength.Auto});
+        footer.ColumnDefinitions.Add(new(){Width=GridLength.Auto});if(media && favorite!=null){Grid.SetColumn(favorite,1);footer.Children.Add(favorite);}
         source=FooterButton(Localization.Text("Choose media source"),()=>Toggle("source"));
         var chevron=Icons.Create("chevron",8,UI.Muted);chevron.Margin=new(7,0,0,0);source.Content=UI.Row(sourceIcon,sourceName,chevron);source.HorizontalAlignment=HorizontalAlignment.Left;source.Visibility=media?Visibility.Visible:Visibility.Collapsed;source.ToolTip=Localization.Text("Choose media source · Enter or Space to open");footer.Children.Add(source);
-        level=FooterButton(Localization.Text("Volume controls"),()=>Toggle("volume"));level.Content=UI.Row(levelIcon,levelText);level.HorizontalAlignment=HorizontalAlignment.Right;level.Visibility=volume?Visibility.Visible:Visibility.Collapsed;level.ToolTip=Localization.Text("Volume, mute, mixer and audio devices · Enter or Space to open");Grid.SetColumn(level,1);footer.Children.Add(level);
+        level=FooterButton(Localization.Text("Volume controls"),()=>Toggle("volume"));level.Content=UI.Row(levelIcon,levelText);level.HorizontalAlignment=HorizontalAlignment.Right;level.Visibility=volume?Visibility.Visible:Visibility.Collapsed;level.ToolTip=Localization.Text("Volume, mute, mixer and audio devices · Enter or Space to open");Grid.SetColumn(level,2);footer.Children.Add(level);
         if(!media){content.MinHeight=144;var heading=UI.Heading(Localization.Text("Volume"),18);content.Children.Add(heading);}
         content.Children.Add(footer);RowDefinitions.Add(new(){Height=GridLength.Auto});RowDefinitions.Add(new(){Height=GridLength.Auto});Children.Add(content);Grid.SetRow(popover,1);Children.Add(popover);
         KeyboardNavigation.SetTabNavigation(popover,KeyboardNavigationMode.Cycle);
