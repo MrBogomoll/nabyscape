@@ -9,7 +9,18 @@ namespace NabyScape;
 
 public sealed partial class OverlayWindow
 {
-    private bool feedbackBrightness;
+    private bool feedbackBrightness,diagnosticFeedbackOnly;
+    internal void IsolateDiagnosticFeedback()
+    {
+        if(!DiagnosticRun)throw new InvalidOperationException("Feedback isolation requires diagnostics.");
+        diagnosticFeedbackOnly=true;ClearFeedback();
+    }
+    private readonly StackPanel feedbackLeft=new(){Orientation=Orientation.Horizontal,VerticalAlignment=VerticalAlignment.Center,Visibility=Visibility.Collapsed};
+    private readonly TextBlock feedbackInlineValue=new(){FontSize=12,Foreground=Brushes.White,Width=38,Margin=new(0,0,10,0),VerticalAlignment=VerticalAlignment.Center,Visibility=Visibility.Collapsed};
+    // Music keeps its artwork and content beside volume; other priority content keeps its feedback.
+    private bool InlineVolumeFeedback=>FeedbackVisible && !feedbackBrightness && ClosedMediaActive &&
+        app.Notifications.Current==null && !ClosedVoiceActivity && ActiveCountdown()==null && !ClosedStopwatchActive;
+    private bool PrimaryFeedbackVisible=>FeedbackVisible && !InlineVolumeFeedback;
     private readonly TextBlock feedbackIcon=new(){FontFamily=new FontFamily("Segoe MDL2 Assets"),FontSize=15,Foreground=Brushes.White,Width=27,VerticalAlignment=VerticalAlignment.Center,Visibility=Visibility.Collapsed};
     private readonly ProgressBar feedbackLevel=new(){Width=34,Height=3,Minimum=0,Maximum=1,Margin=new(7,0,0,0),VerticalAlignment=VerticalAlignment.Center,Visibility=Visibility.Collapsed,IsHitTestVisible=false};
     private readonly DispatcherTimer feedbackTick=new(){Interval=TimeSpan.FromMilliseconds(80)};
@@ -24,6 +35,7 @@ public sealed partial class OverlayWindow
         if(!app.Settings.ReactiveFeedback || !(brightness?app.Settings.BrightnessFeedback:app.Settings.VolumeFeedback) || expanded || peeking || !IsVisible || TuckRequested || userHidden)return;
         feedbackBrightness=brightness;
         feedbackText=muted?Localization.Text("Muted"):$"{Math.Clamp(level,0,1)*100:0}%";
+        feedbackInlineValue.Text=muted?"0%":feedbackText;feedbackLeft.ToolTip=muted?Localization.Text("Muted"):Localization.Text("Volume")+" · "+feedbackInlineValue.Text;
         feedbackIcon.Text=brightness?"\uE706":muted?"\uE74F":"\uE767";
         feedbackIcon.ToolTip=brightness?Localization.Text("Brightness"):Localization.Text("Volume");
         feedbackUntil=DateTimeOffset.UtcNow.AddSeconds(2);
@@ -33,15 +45,22 @@ public sealed partial class OverlayWindow
     }
     private void RefreshFeedback()
     {
-        bool visible=FeedbackVisible;feedbackIcon.Visibility=feedbackLevel.Visibility=visible?Visibility.Visible:Visibility.Collapsed;UpdateClosedMediaIcon();
-        // At the minimum notch width, optional widgets would squeeze out the percentage.
-        summary.MinWidth=visible?40:0;RefreshCompactOptionalVisibility();
+        bool visible=FeedbackVisible;feedbackLeft.Visibility=visible?Visibility.Visible:Visibility.Collapsed;
+        feedbackLevel.Visibility=visible || ClosedMediaActive?Visibility.Visible:Visibility.Collapsed;
+        if(!visible){feedbackLevel.BeginAnimation(ProgressBar.ValueProperty,null);feedbackLevel.Value=app.Audio.Muted?0:Math.Clamp(app.Audio.Volume,0,1);}
+        // At minimum width retain space for Naby and the standalone percentage too.
+        double reserve=27+40+(AssistantCharacterAvailable?Math.Clamp(app.Settings.Height-4,24,32)+9:0)+compact.Padding.Left+compact.Padding.Right+7;
+        feedbackLevel.Width=visible && !InlineVolumeFeedback?Math.Clamp(ClosedContentWidth-reserve,0,34):34;
+        feedbackIcon.Visibility=visible && !InlineVolumeFeedback?Visibility.Visible:Visibility.Collapsed;
+        feedbackInlineValue.Visibility=InlineVolumeFeedback?Visibility.Visible:Visibility.Collapsed;UpdateClosedMediaIcon();
+        // Standalone feedback owns the summary; shared feedback keeps the lyric column flexible.
+        summary.MinWidth=PrimaryFeedbackVisible?40:0;RefreshCompactOptionalVisibility();
         if(!visible){feedbackUntil=default;feedbackTick.Stop();}
     }
     private void RefreshCompactOptionalVisibility()
     {
         RefreshAssistantCharacter();bool feedback=FeedbackVisible;
-        compactClock.Visibility=CompactDockPresentation.ShowClock(WidgetOn("clock"),IdleContent,feedback)?Visibility.Visible:Visibility.Collapsed;
+        compactClock.Visibility=CompactDockPresentation.ShowClock(WidgetOn("clock"),IdleContent,feedback,ClosedMediaActive)?Visibility.Visible:Visibility.Collapsed;
         awakeMark.Visibility=!feedback && app.Awake?.Active==true?Visibility.Visible:Visibility.Collapsed;
         RefreshIdleDock();
     }

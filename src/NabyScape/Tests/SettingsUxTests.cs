@@ -15,6 +15,8 @@ internal static class SettingsUxTests
             Assert(!CompactDockPresentation.ShowClock(false,false,false));
             Assert(CompactDockPresentation.ShowClock(true,false,false));
             Assert(!CompactDockPresentation.ShowClock(true,true,true));
+            Assert(!CompactDockPresentation.ShowClock(true,false,false,true));
+            Assert(CompactDockPresentation.ShowClock(false,true,false,false));
         });
         test("Compact date spacing excludes clock and companion clearance",()=>
         {

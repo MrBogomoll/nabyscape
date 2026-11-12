@@ -44,7 +44,7 @@ public sealed partial class OverlayWindow
     }
     internal void DiagnosticScrollHardware(bool end)
     {if(!DiagnosticRun)throw new InvalidOperationException("Diagnostic scroll requires diagnostics.");if(end)monitorDetailScroll?.ScrollToEnd();else monitorDetailScroll?.ScrollToTop();}
-    internal bool FeedbackHasExpired=>!FeedbackVisible && summary.MinWidth==0 && compactClock.Visibility==(CompactDockPresentation.ShowClock(WidgetOn("clock"),IdleContent,false)?Visibility.Visible:Visibility.Collapsed);
+    internal bool FeedbackHasExpired=>!FeedbackVisible && summary.MinWidth==0 && compactClock.Visibility==(CompactDockPresentation.ShowClock(WidgetOn("clock"),IdleContent,false,ClosedMediaActive)?Visibility.Visible:Visibility.Collapsed);
     internal string FeedbackDiagnosticState=>$"active={FeedbackVisible}; expiry={feedbackUntil:O}; now={DateTimeOffset.UtcNow:O}; header={summary.Text}; clock={compactClock.Visibility}; audio={app.Audio.Volume:0.00}/{app.Audio.Muted}/{app.Audio.Device}";
     internal bool FeedbackTextFits
     {

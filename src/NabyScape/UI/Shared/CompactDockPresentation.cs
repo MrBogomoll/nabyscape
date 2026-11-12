@@ -22,7 +22,7 @@ internal static class CompactDockPresentation
     };
     internal static double ContentWidth(double surfaceWidth,double panelWidth,bool notch)=>Math.Max(120,Math.Min(surfaceWidth,panelWidth)-(notch?32:12));
     internal static double DateRoom(double contentWidth,double clockWidth)=>contentWidth-28-2*Math.Max(60,clockWidth+10);
-    internal static bool ShowClock(bool enabled,bool idle,bool feedback)=>!feedback && (enabled || idle);
+    internal static bool ShowClock(bool enabled,bool idle,bool feedback,bool playing=false)=>!playing && !feedback && (enabled || idle);
     internal static void FillDate(TextBlock target,DateTime day)
     {
         var culture=Localization.Culture;target.Inlines.Clear();

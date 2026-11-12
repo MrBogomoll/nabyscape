@@ -122,7 +122,7 @@ public sealed partial class OverlayWindow
         IsVisibleChanged+=(_,_)=>{ConfigureLiveActivity();if(!IsVisible)ClearFeedback();};
     }
     private bool AudioVisualDemand=>IsVisible && !IsTucked && app.Settings.LiveActivity && app.Media.Playing && WidgetOn("media") &&
-        ((!expanded && !peeking && !FeedbackVisible && (activity.IsVisible || closedTitleWave.IsVisible)) || (expanded && musicWave.IsVisible) || (peeking && !assistantPeeking && peekId=="media" && peekWave.IsVisible));
+        ((!expanded && !peeking && !PrimaryFeedbackVisible && (activity.IsVisible || closedTitleWave.IsVisible)) || (expanded && musicWave.IsVisible) || (peeking && !assistantPeeking && peekId=="media" && peekWave.IsVisible));
     private bool ReflectionMoving
     {
         get
@@ -188,7 +188,7 @@ public sealed partial class OverlayWindow
     }
     private void UpdateAudioFeedback()
     {
-        RefreshFeedback();var audio=app.Audio;if(!audio.Available)return;
+        RefreshFeedback();if(diagnosticFeedbackOnly)return;var audio=app.Audio;if(!audio.Available)return;
         if(audioSeen && app.Settings.ReactiveFeedback && app.Settings.VolumeFeedback && !expanded && !peeking && IsVisible && !TuckRequested && !userHidden)
         {
             string text=audio.Device!=lastDevice?Localization.Text("Output · ")+audio.Device:audio.Muted!=lastMuted || Math.Abs(audio.Volume-lastVolume)>.005?audio.Muted?Localization.Text("Audio muted"):Localization.Format("Volume  {0:0}%",audio.Volume*100):"";

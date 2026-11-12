@@ -38,6 +38,7 @@ internal static class Diagnostics
 
         Directory.CreateDirectory(directory);var report=new List<string>();int failures=0;
 
+
         // Integration checks reach every Settings control; the gallery covers the essentials view.
         app.Settings.SettingsShowAll=!Environment.GetCommandLineArgs().Contains("--settings-gallery-only");
 
@@ -122,6 +123,8 @@ internal static class Diagnostics
         {
 
             overlay.DiagnosticRun=true;app.Settings.SmartActivities=false;
+            // Keep real endpoint limiters from injecting unrelated feedback into fixtures.
+            if(Environment.GetCommandLineArgs().Contains("--isolated-diagnostics"))overlay.IsolateDiagnosticFeedback();
             if(Environment.GetCommandLineArgs().Contains("--settings-themes-only")){await SettingsThemeDiagnostics.Run(app,overlay,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--russian-ui-only")){await RussianUiDiagnostics.Run(app,overlay,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--lyrics-language-live-only")){await LyricsPopoverDiagnostics.RunLanguageLive(app,directory);return;}
@@ -129,6 +132,7 @@ internal static class Diagnostics
             if(Environment.GetCommandLineArgs().Contains("--lyrics-provider-live-only")){await LyricsPopoverDiagnostics.RunLive(app,directory);return;}
             if(Environment.GetCommandLineArgs().Contains("--lyrics-popover-only")){await LyricsPopoverDiagnostics.Run(app,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--lyrics-power-ui-only")){await LyricsPowerDiagnostics.Run(app,overlay,Check);return;}
+            if(Environment.GetCommandLineArgs().Contains("--volume-lyrics-only")){await VolumeLyricsDiagnostics.Run(app,overlay,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--closed-lyrics-fallback-only")){await ClosedLyricsFallbackDiagnostics.Run(app,overlay,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--removed-activities-only")){await RemovedActivitiesDiagnostics.Run(app,overlay,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--assistant-transform-only")){await AssistantTransformDiagnostics.Run(app,overlay,directory,Check);return;}

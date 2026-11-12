@@ -41,7 +41,7 @@ public sealed partial class OverlayWindow
     }
     private bool ClosedMediaActive=>app.Settings.ClosedMediaContent!="None" && WidgetOn("media") && app.Media.Available && app.Media.Playing;
     private bool WantsClosedLyrics=>!closedLyricsDisposed && app.Settings.ClosedMediaContent=="Lyrics" && ClosedMediaActive &&
-        IsVisible && WindowState!=WindowState.Minimized && !userHidden && !IsTucked && !TuckRequested && !expanded && !peeking && !FeedbackVisible && app.Notifications.Current==null && !ClosedVoiceActivity && ActiveCountdown()==null && !ClosedStopwatchActive;
+        IsVisible && WindowState!=WindowState.Minimized && !userHidden && !IsTucked && !TuckRequested && !expanded && !peeking && !PrimaryFeedbackVisible && app.Notifications.Current==null && !ClosedVoiceActivity && ActiveCountdown()==null && !ClosedStopwatchActive;
     private int ClosedLyricIndex=>LyricTiming.CanUse(app.Media)?LyricTiming.VocalIndex(app.Lyrics.Result.Lines,app.Media.Timeline().elapsed+app.Settings.LyricsOffset):-1;
     private string ClosedMediaText
     {

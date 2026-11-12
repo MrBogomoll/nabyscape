@@ -18,10 +18,10 @@ public sealed partial class OverlayWindow
     internal bool ClosedCoverVisible=>closedCover.Visibility==Visibility.Visible && closedCoverImage.Source!=null;
     private bool UpdateClosedMediaWaveform()
     {
-        bool waveform=app.Notifications.Current==null && !expanded && !peeking && !FeedbackVisible && ActiveCountdown()==null && !ClosedStopwatchActive && !ClosedVoiceActivity && ClosedMediaActive &&
+        bool waveform=app.Notifications.Current==null && !expanded && !peeking && !PrimaryFeedbackVisible && ActiveCountdown()==null && !ClosedStopwatchActive && !ClosedVoiceActivity && ClosedMediaActive &&
             (app.Settings.ClosedMediaContent=="Waveform" || app.Settings.ClosedMediaContent=="Lyrics" && ClosedLyricIndex<0);
         bool changed=closedWaveTarget!=waveform;
-        bool crossfade=app.Settings.ClosedMediaContent=="Lyrics" && ClosedMediaActive && !expanded && !peeking && !FeedbackVisible && ActiveCountdown()==null && !ClosedStopwatchActive && !ClosedVoiceActivity && app.Notifications.Current==null && Motion.Enabled && !app.Settings.ReduceMotion;
+        bool crossfade=app.Settings.ClosedMediaContent=="Lyrics" && ClosedMediaActive && !expanded && !peeking && !PrimaryFeedbackVisible && ActiveCountdown()==null && !ClosedStopwatchActive && !ClosedVoiceActivity && app.Notifications.Current==null && Motion.Enabled && !app.Settings.ReduceMotion;
         if(changed || !crossfade)
         {
             bool initialized=closedWaveTarget.HasValue;closedWaveTarget=waveform;int revision=++closedWaveTransition;
@@ -55,7 +55,7 @@ public sealed partial class OverlayWindow
         compact.Visibility=expanded?Visibility.Collapsed:Visibility.Visible;
         var now=DateTimeOffset.Now;
         bool countdown=(WidgetOn("focus") && app.Session.Focus.Remaining(now)>0 || WidgetOn("timer") && app.Session.Timer.Remaining(now)>0);
-        bool cover=!FeedbackVisible && !countdown && !ClosedStopwatchActive && !ClosedVoiceActivity && app.Settings.ClosedMediaIcon=="Artwork" && ClosedMediaActive && app.Media.Artwork!=null;
+        bool cover=!PrimaryFeedbackVisible && !countdown && !ClosedStopwatchActive && !ClosedVoiceActivity && app.Settings.ClosedMediaIcon=="Artwork" && ClosedMediaActive && app.Media.Artwork!=null;
         bool waveform=UpdateClosedMediaWaveform();
         if(!app.Media.Playing || app.Audio.MediaMeterMuted || app.Settings.ReduceMotion || !app.Settings.LiveActivity)closedTitleWave.Sample(0,1,0,false,false,false,0);
         closedCover.Visibility=cover?Visibility.Visible:Visibility.Collapsed;

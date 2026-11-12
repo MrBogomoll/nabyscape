@@ -29,7 +29,7 @@ public sealed partial class OverlayWindow
     {
         if(!idleDockReady)return;
         idleClosed=IdleContent && !TuckRequested && !dockEditing;
-        compactClock.Visibility=CompactDockPresentation.ShowClock(WidgetOn("clock"),IdleContent,FeedbackVisible)?Visibility.Visible:Visibility.Collapsed;
+        compactClock.Visibility=CompactDockPresentation.ShowClock(WidgetOn("clock"),IdleContent,FeedbackVisible,ClosedMediaActive)?Visibility.Visible:Visibility.Collapsed;
         if(idleLayoutState!=idleClosed)
         {
             idleLayoutState=idleClosed;

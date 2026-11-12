@@ -32,8 +32,8 @@ internal static class ClosedWaveformDiagnostics
         var bands=new float[25];for(int i=0;i<25;i++)bands[i]=(float)(.08+.8*Math.Exp(-Math.Pow((i-6)/4d,2))+.55*Math.Exp(-Math.Pow((i-17)/2d,2)));
         void Feed(){for(int i=0;i<15;i++)wave.Sample(.4,1/60d,0,false,false,true,i/60d,true,false,bands,s.WaveformSensitivity);}
         Feed();check("Closed waveform uses 104 by 22 DIP at the user's 327 by 36 dock size",island.ClosedTitleWaveVisible && island.ClosedCoverVisible && Math.Abs(wave.ActualWidth-104)<1 && wave.ActualHeight==22);
-        var bounds=wave.TransformToAncestor(island).TransformBounds(new Rect(wave.RenderSize));var clockBounds=clock.TransformToAncestor(island).TransformBounds(new Rect(clock.RenderSize));
-        check("Enlarged closed waveform leaves the clock and companion their own space",bounds.Right<clockBounds.Left && wave.WaveBarHeight(6,22)>17 && wave.WaveBarHeight(0,22)<10);
+        var bounds=wave.TransformToAncestor(island).TransformBounds(new Rect(wave.RenderSize));var level=Field<ProgressBar>("feedbackLevel");var levelBounds=level.TransformToAncestor(island).TransformBounds(new Rect(level.RenderSize));
+        check("Enlarged closed waveform leaves the volume bar and companion their own space",!clock.IsVisible && level.IsVisible && bounds.Right<levelBounds.Left && wave.WaveBarHeight(6,22)>17 && wave.WaveBarHeight(0,22)<10);
         Capture("closed-waveform-327");Capture("closed-waveform-327-150",1.5);Capture("closed-waveform-327-200",2);
         var gif=new GifBitmapEncoder();
         for(int frame=0;frame<36;frame++)

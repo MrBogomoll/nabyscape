@@ -113,12 +113,12 @@ public sealed partial class OverlayWindow
         bool enabled=AssistantCharacterAvailable;
         assistantCharacterButton.ToolTip=app.Assistant.VoiceConnected?Localization.Text("Microphone on · click for voice controls"):app.Assistant.WakeListening?app.Assistant.WakeStatus:app.Assistant.Desktop.Sharing?Localization.Text("Screen sharing on · click for controls"):Localization.Text("AI companion · hover to meet · click to chat");
         double size=Math.Clamp(app.Settings.Height-4,24,32);assistantCharacterButton.MinHeight=size;assistantCharacterButton.Width=assistantCharacterButton.Height=size;closedAssistant.Width=closedAssistant.Height=size;
-        assistantHeaderSpace.Width=size+9;assistantHeaderSpace.Visibility=enabled && !FeedbackVisible?Visibility.Visible:Visibility.Collapsed;
+        assistantHeaderSpace.Width=size+9;assistantHeaderSpace.Visibility=enabled?Visibility.Visible:Visibility.Collapsed;
         assistantCharacterHost.Width=ClosedContentWidth;assistantCharacterHost.Height=app.Settings.Height;
         SyncAssistantVisibility();
         RefreshAssistantVisuals();RefreshIdleDock();
     }
-    private void SyncAssistantVisibility(){assistantCharacterHost.Visibility=AssistantCharacterAvailable && !expanded && !peeking && !FeedbackVisible?Visibility.Visible:Visibility.Collapsed;if(closedAssistant.IsVisible)closedAssistant.Music=AssistantSpotifyPlaying;ConfigureDisplayFollow();}
+    private void SyncAssistantVisibility(){assistantCharacterHost.Visibility=AssistantCharacterAvailable && !expanded && !peeking?Visibility.Visible:Visibility.Collapsed;if(closedAssistant.IsVisible)closedAssistant.Music=AssistantSpotifyPlaying;ConfigureDisplayFollow();}
     internal void PreviewAssistant(bool reply=false)
     {
         if(expanded || userHidden || !AssistantCharacterAvailable || (TuckRequested && !tuckPreview))return;
