@@ -49,10 +49,11 @@ internal static class ScrollLyricsDiagnostics
         }
         s.PanelWidth=526;s.PanelMaxHeight=417;s.PanelScale=1;app.ChangeSettings();island.SelectPage("focus",false);await Task.Delay(100);
         var countdown=Diagnostics.Descendants(island).OfType<CountdownView>().First(v=>v.IsVisible);
-        var minute=Diagnostics.Descendants(countdown).OfType<TextBox>().First();
-        var increase=Diagnostics.Descendants(countdown).OfType<Button>().First(b=>AutomationProperties.GetName(b).StartsWith("Increase "));
-        minute.Text="5";increase.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));check("Duration stepper changes editable minutes",minute.Text=="6");
-        Field<PeekWheelAccumulator>("panelWheel").Reset();Wheel(minute,-120);await Task.Delay(80);check("Countdown minute field wheel advances the widget instead of nudging content",island.ActivePage!="focus");
+        var minute=Diagnostics.Descendants(countdown).OfType<TextBox>().First(t=>UI.Identity(t).EndsWith(" Minutes",StringComparison.Ordinal));
+        string prefix=UI.Identity(minute).Split(' ')[0];
+        var increase=Diagnostics.Descendants(countdown).OfType<Button>().First(b=>UI.Identity(b)==prefix+" Minutes up");
+        minute.Text="05";increase.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));check("Duration stepper changes editable minutes",minute.Text=="06");
+        Field<PeekWheelAccumulator>("panelWheel").Reset();Wheel(minute,-120);await Task.Delay(80);check("Countdown wheel edits minutes without leaving the widget",island.ActivePage=="focus" && minute.Text=="05");
         s.PanelWidth=526;s.PanelMaxHeight=480;app.ChangeSettings();island.SelectPage("media",false);await Task.Delay(100);
         var lyrics=Field<LyricsView>("mediaLyrics");var result=new LyricResult(new[]{new LyricLine(0,"A little closer to the music"),new LyricLine(4,"One line, right on time"),new LyricLine(8,"Let the next moment arrive")},"Synced lyrics · original sample");
         lyrics.SetFixture(result,5.6,12);lyrics.Visibility=Visibility.Visible;Call("ResizeToolPanel");await Task.Delay(150);island.UpdateLayout();

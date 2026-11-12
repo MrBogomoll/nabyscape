@@ -135,7 +135,7 @@ internal sealed class SettingsScene : FrameworkElement
             case "Stopwatch":
                 Caption("Stopwatch",28,13,12,true);Caption("00:00",28,33,28,true);Keys("Start",205,29,78);Keys("Reset",292,29,78);Note("Start → Pause → Resume · Reset clears elapsed time");break;
             case "Focus sessions":
-                Caption(s.FocusMinutes+":00",28,20,28,true);Caption("Focus",30,59,12,false,muted);Line(170,25,170,77);Caption(s.BreakMinutes+":00",224,20,28,true);Caption("Break",226,59,12,false,muted);Note("Used when the next session starts");break;
+                Caption(Countdown.FormatSeconds(s.FocusSeconds),28,20,28,true);Caption("Focus",30,59,12,false,muted);Line(170,25,170,77);Caption(Countdown.FormatSeconds(s.BreakSeconds),224,20,28,true);Caption("Break",226,59,12,false,muted);Note("Used when the next session starts");break;
             case "Hide exceptions":
                 Caption("Excluded apps stay visible",24,22,17,true);Caption("ChatGPT.exe · explorer.exe",24,53,12);Note("Fullscreen and maximized windows · other apps follow hiding rules");break;
             case "Automatic tucking":

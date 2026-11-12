@@ -119,6 +119,12 @@ public sealed partial class Settings
     public bool AutoStart { get; set; }
     public int FocusMinutes { get; set; } = 25;
     public int BreakMinutes { get; set; } = 5;
+    public int TimerDurationSeconds {get;set;}=300;
+    public int? FocusDurationSeconds {get;set;}
+    public int? BreakDurationSeconds {get;set;}
+    [JsonIgnore] internal int FocusSeconds {get=>FocusDurationSeconds??FocusMinutes*60;set{FocusDurationSeconds=Math.Clamp(value,0,DurationParts.MaximumSeconds);FocusMinutes=Math.Clamp((value+59)/60,1,240);}}
+    [JsonIgnore] internal int BreakSeconds {get=>BreakDurationSeconds??BreakMinutes*60;set{BreakDurationSeconds=Math.Clamp(value,0,DurationParts.MaximumSeconds);BreakMinutes=Math.Clamp((value+59)/60,1,120);}}
+
     public List<WidgetSetting> Widgets { get; set; } = Defaults();
     public List<Shortcut> Shortcuts { get; set; } = new()
     {
@@ -165,6 +171,9 @@ public sealed partial class Settings
         if(LaunchStyle is not ("IconsLabels" or "Icons" or "Text"))LaunchStyle="IconsLabels";
         RecentColors=(RecentColors??new()).Where(ValidColor).Distinct(StringComparer.OrdinalIgnoreCase).Take(8).ToList();
         FocusMinutes=Math.Clamp(FocusMinutes,1,240); BreakMinutes=Math.Clamp(BreakMinutes,1,120);
+        TimerDurationSeconds=Math.Clamp(TimerDurationSeconds,0,DurationParts.MaximumSeconds);
+        if(FocusDurationSeconds.HasValue)FocusDurationSeconds=Math.Clamp(FocusDurationSeconds.Value,0,DurationParts.MaximumSeconds);
+        if(BreakDurationSeconds.HasValue)BreakDurationSeconds=Math.Clamp(BreakDurationSeconds.Value,0,DurationParts.MaximumSeconds);
         if(Preset!="Mac" && Preset!="iPhone") Preset="iPhone";
         if(!ValidColor(Background)) Background="#000000";
         if(!ValidColor(Accent)) Accent="#FFFFFF";
@@ -210,7 +219,7 @@ public sealed class Countdown
     public string Display(DateTimeOffset now)
     =>FormatSeconds(Remaining(now));
     internal static string FormatSeconds(double seconds)
-    { var span=TimeSpan.FromSeconds(Math.Ceiling(seconds)); return span.TotalHours>=1 ? span.ToString(@"h\:mm\:ss") : span.ToString(@"mm\:ss"); }
+    { var span=TimeSpan.FromSeconds(Math.Ceiling(seconds)); return span.TotalHours>=1 ? $"{(int)span.TotalHours}:{span.Minutes:00}:{span.Seconds:00}" : span.ToString(@"mm\:ss"); }
 }
 public sealed class SessionState
 {

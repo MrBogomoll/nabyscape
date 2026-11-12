@@ -350,5 +350,8 @@
   "WindowLargeCorners": true,
   "WindowEffects": true,
   "WindowCompact": false,
-  "WindowHoverAccents": true
+  "WindowHoverAccents": true,
+  "TimerDurationSeconds": 300,
+  "FocusDurationSeconds": null,
+  "BreakDurationSeconds": null
 }

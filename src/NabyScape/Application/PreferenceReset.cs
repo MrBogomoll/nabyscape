@@ -18,7 +18,7 @@ internal static class PreferenceReset
         ["Notifications"]="ExternalNotifications ExternalNotificationPopup ExternalNotificationText ExternalNotificationQuietHours ExternalNotificationMuted CountdownSound CountdownSoundVolume CountdownSoundFile NotificationSeconds NotificationAnimation QuietHours QuietStart QuietEnd NotificationsSnoozedUntil NotificationDelivery NotifyTimer NotifyFocus NotifyDownloads NotifyUpdates NotifyFailures DownloadsEnabled DownloadsFolder".Split(' '),
         ["Appearance"]="Preset Radius Background Accent Opacity WindowTheme WindowGlass WindowLargeCorners WindowEffects WindowCompact WindowHoverAccents SettingsMaterial GlassStyle GlassStrength AlbumAccent ControlFill ControlBorder SelectionFill CategoryStyle BoldMediaTitle BoldHeadings RecentColors".Split(' '),
         ["Layout"]="FollowMonitorAnimation FollowMonitorDuration DockUnlocked PanelAutoHeight Width Height Horizontal DockEdge DockVertical DockInset Top Monitor DisplayMode CompactLayout PanelWidth PanelMaxHeight PanelPadding PanelScale SectionGap".Split(' '),
-        ["Content"]="HoverFollowsWidgets Widgets Tools HoverViews FocusMinutes BreakMinutes".Split(' '),
+        ["Content"]="HoverFollowsWidgets Widgets Tools HoverViews FocusMinutes BreakMinutes TimerDurationSeconds FocusDurationSeconds BreakDurationSeconds".Split(' '),
         ["Controls"]="HoverPeek TwoStageHover HoverWidth HoverHeight HoverDelayMs HoverDetailDelayMs SwipeDistance PanelSwipe DropReveal DetachablePreviews CoverGestures WheelAction WheelWrapTabs MiddleAction VolumeStep HotkeyEnabled HotkeyKey HotkeyModifiers".Split(' '),
         ["Audio"]="MediaIntegrationEnabled WaveformSource WaveformSensitivity LyricsEnabled LyricsAnimation LyricsTextMode LyricsOffset ClosedMediaIcon ClosedMediaContent ReactiveFeedback WaveformIdleMotion VolumeFeedback BrightnessFeedback".Split(' '),
         ["System"]="Clock24Hour ClockSeconds ShowDate MonitorNetwork MonitorStorage MonitorProcesses".Split(' '),
@@ -67,6 +67,8 @@ internal static class PreferenceReset
         foreach(string key in Keys(null))
         {
             if(PremiumPreferences.Keys.Contains(key) || key is "DisplayMode" or "SettingsMaterial" or "HideAppExceptions" or "WheelWrapTabs" or "WindowTheme" or "WindowGlass" or "WindowLargeCorners" or "WindowEffects" or "WindowCompact" or "WindowHoverAccents" || Categories["Application"].Contains(key))continue;
+            // Backups made before exact durations use their original minute values.
+            if((key is "TimerDurationSeconds" or "FocusDurationSeconds" or "BreakDurationSeconds") && !json.RootElement.TryGetProperty(key,out _))continue;
             bool nullable=Nullable.GetUnderlyingType(typeof(Settings).GetProperty(key)!.PropertyType)!=null;
             if(!json.RootElement.TryGetProperty(key,out var value) || value.ValueKind==JsonValueKind.Null && !nullable)
                 throw new InvalidDataException(Localization.Text("The preference backup is incomplete: ")+key);

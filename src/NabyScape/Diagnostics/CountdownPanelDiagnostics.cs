@@ -8,85 +8,68 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-
 namespace NabyScape;
-
 internal static class CountdownPanelDiagnostics
 {
     internal static async Task Run(App app,OverlayWindow island,string directory,Action<string,bool> check)
     {
-        var s=app.Settings;s.CompactLayout=true;s.CategoryStyle="Dots";s.PanelWidth=526;s.PanelMaxHeight=500;s.PanelPadding=26;s.PanelScale=1;s.ReduceMotion=true;s.HideMaximized=s.HideFullscreen=s.AlwaysTucked=false;s.NotificationDelivery="Off";s.CountdownSound="Off";
-        foreach(var widget in s.Widgets)widget.Enabled=widget.Id is "timer" or "focus" or "media";
-        s.FocusMinutes=25;s.BreakMinutes=5;app.Session.Timer.Reset();app.Session.Focus.Reset();app.ChangeSettings();island.Reveal(false);island.SelectPage("focus",false);await Task.Delay(150);
-        CountdownView View(bool focus)=>Diagnostics.Descendants(island).OfType<CountdownView>().Single(v=>Diagnostics.Descendants(v).OfType<Button>().Any(b=>AutomationProperties.GetAutomationId(b)==(focus?"focus-primary":"timer-primary")));
-        Button Button(bool focus,string action="primary")=>Diagnostics.Descendants(View(focus)).OfType<Button>().Single(b=>AutomationProperties.GetAutomationId(b)==(focus?"focus-":"timer-")+action);
-        TextBox Entry(bool focus,string name)=>Diagnostics.Descendants(View(focus)).OfType<TextBox>().Single(t=>AutomationProperties.GetName(t)==name);
-        void Click(Button button)=>button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
-        void Capture(string name,double scale=1)
+        var s=app.Settings;s.CompactLayout=true;s.PanelWidth=526;s.PanelMaxHeight=650;s.PanelPadding=26;s.PanelScale=1;s.ReduceMotion=true;s.HideMaximized=s.HideFullscreen=s.AlwaysTucked=false;s.SmartActivities=false;s.NotificationDelivery="Off";s.CountdownSound="Off";
+        foreach(var w in s.Widgets)w.Enabled=w.Id is "timer" or "focus" or "media";
+        s.FocusSeconds=1500;s.BreakSeconds=300;s.TimerDurationSeconds=300;app.Session.Timer.Reset();app.Session.Focus.Reset();app.ChangeSettings();island.Reveal(false);island.SelectPage("focus",false);await Task.Delay(150);
+        CountdownView View(string id)=>Diagnostics.Descendants(island).OfType<CountdownView>().Single(v=>Diagnostics.Descendants(v).OfType<Button>().Any(b=>UI.Identity(b)==id+"-primary"));
+        TextBox Input(string id,string part)=>Diagnostics.Descendants(View(id=="break"?"focus":id)).OfType<TextBox>().Single(t=>UI.Identity(t)==id+" "+part);
+        Button Button(string id,string action="primary")=>Diagnostics.Descendants(View(id)).OfType<Button>().Single(b=>UI.Identity(b)==id+"-"+action);
+        void Click(Button b)=>b.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+        void Set(string id,int h,int m,int sec){Input(id,"Hours").Text=h.ToString("00");Input(id,"Minutes").Text=m.ToString("00");Input(id,"Seconds").Text=sec.ToString("00");}
+        void Wheel(TextBox field,int delta){field.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice,Environment.TickCount,delta){RoutedEvent=Mouse.PreviewMouseWheelEvent});}
+        void Capture(FrameworkElement view,string name)
+        {view.UpdateLayout();var bmp=new RenderTargetBitmap((int)view.ActualWidth,(int)view.ActualHeight,96,96,PixelFormats.Pbgra32);bmp.Render(view);var png=new PngBitmapEncoder();png.Frames.Add(BitmapFrame.Create(bmp));using var file=File.Create(Path.Combine(directory,name+".png"));png.Save(file);}
+        foreach(string id in new[]{"timer","focus","break"})
         {
-            island.UpdateLayout();var bitmap=new RenderTargetBitmap((int)Math.Ceiling(island.ActualWidth*scale),(int)Math.Ceiling(island.ActualHeight*scale),96*scale,96*scale,PixelFormats.Pbgra32);bitmap.Render(island);
-            int w=Math.Min(bitmap.PixelWidth,(int)Math.Ceiling(island.PaintedWidth*scale)),h=Math.Min(bitmap.PixelHeight,(int)Math.Ceiling(island.PaintedHeight*scale));
-            var crop=new CroppedBitmap(bitmap,new Int32Rect(Math.Max(0,(bitmap.PixelWidth-w)/2),0,w,h));var png=new PngBitmapEncoder();png.Frames.Add(BitmapFrame.Create(crop));using var file=File.Create(Path.Combine(directory,name+".png"));png.Save(file);
+            Set(id,99,59,59);string page=island.ActivePage;Wheel(Input(id,"Seconds"),120);
+            check(id+" seconds wrap to zero without carrying or switching pages",Input(id,"Seconds").Text=="00" && Input(id,"Minutes").Text=="59" && island.ActivePage==page);
+            Wheel(Input(id,"Seconds"),-120);check(id+" seconds wrap back to 59",Input(id,"Seconds").Text=="59");
+            Wheel(Input(id,"Minutes"),120);check(id+" minutes wrap to zero independently",Input(id,"Minutes").Text=="00" && Input(id,"Hours").Text=="99");
+            var up=Diagnostics.Descendants(View(id=="break"?"focus":id)).OfType<Button>().Single(b=>UI.Identity(b)==id+" Hours up");Click(up);
+            check(id+" hour button wraps 99 to zero",Input(id,"Hours").Text=="00");
+            Set(id,0,0,58);Wheel(Input(id,"Seconds"),600);check(id+" multi-detent wheel preserves all five steps",Input(id,"Seconds").Text=="03");
         }
-        check("Timer and Focus retain their side-by-side layout",Math.Abs(View(false).TranslatePoint(new Point(),island).Y-View(true).TranslatePoint(new Point(),island).Y)<1);
-        check("Only one main action and Reset exist per countdown",new[]{false,true}.All(f=>Diagnostics.Descendants(View(f)).OfType<Button>().Count(b=>AutomationProperties.GetAutomationId(b).EndsWith("-primary") || AutomationProperties.GetAutomationId(b).EndsWith("-reset"))==2));
-        Capture("ready");
-        foreach(bool focus in new[]{false,true})
+        Set("break",0,0,7);
+        foreach(string id in new[]{"timer","focus"})
         {
-            string label=focus?"Focus":"Timer";var state=focus?app.Session.Focus:app.Session.Timer;
-            var entry=Entry(focus,focus?"Focus minutes":"Timer duration in minutes");var view=View(focus);
-            entry.Text=focus?"31":"1.5";if(focus)entry.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice,PresentationSource.FromVisual(island),0,Key.Enter){RoutedEvent=Keyboard.PreviewKeyDownEvent});
-            check(label+" starts with a clear Start action",AutomationProperties.GetItemStatus(Button(focus))=="Start" && Button(focus).IsEnabled);
-            Click(Button(focus));double expected=focus?1860:90;var run=state.RunId;
-            check(label+" uses the entered duration",state.Running && Math.Abs(state.DurationSeconds-expected)<.01 && (!focus || s.FocusMinutes==31));
-            check(label+" changes Start to Pause immediately",AutomationProperties.GetItemStatus(Button(focus))=="Pause" && AutomationProperties.GetName(Button(focus))=="Pause "+label.ToLowerInvariant());
-            check(label+" locks duration during the session",!entry.IsEnabled);
-            Click(Button(focus));double paused=state.Remaining(DateTimeOffset.UtcNow);await Task.Delay(160);
-            check(label+" pauses rather than restarting",!state.Running && state.RunId==run && state.DurationSeconds==expected && state.Remaining(DateTimeOffset.UtcNow)==paused && AutomationProperties.GetItemStatus(Button(focus))=="Resume");
-            if(!focus)Capture("timer-paused");
-            Click(Button(focus));
-            check(label+" resumes the same session",state.Running && state.RunId==run && state.DurationSeconds==expected && state.Remaining(DateTimeOffset.UtcNow)<=paused && AutomationProperties.GetItemStatus(Button(focus))=="Pause");
-            check(label+" keeps its controls across shared heartbeats",ReferenceEquals(view,View(focus)) && ReferenceEquals(entry,Entry(focus,focus?"Focus minutes":"Timer duration in minutes")));
+            var state=id=="timer"?app.Session.Timer:app.Session.Focus;Set(id,1,2,3);Click(Button(id));var run=state.RunId;
+            check(id+" starts with exact entered hours minutes seconds",state.Running && state.DurationSeconds==3723);
+            check(id+" locks all duration fields while running",!Input(id,"Seconds").IsEnabled);
+            Click(Button(id));double paused=state.Remaining(DateTimeOffset.UtcNow);await Task.Delay(60);
+            check(id+" pauses without restarting",!state.Running && state.RunId==run && state.Remaining(DateTimeOffset.UtcNow)==paused);
+            Click(Button(id));check(id+" resumes the same countdown",state.Running && state.RunId==run && state.DurationSeconds==3723);
+            Click(Button(id,"reset"));Set(id,0,0,0);check(id+" zero duration cannot start",!Button(id).IsEnabled);
+            Set(id,99,59,59);Click(Button(id));check(id+" accepts 99:59:59",state.DurationSeconds==DurationParts.MaximumSeconds && state.Display(DateTimeOffset.UtcNow).StartsWith("99:59:",StringComparison.Ordinal));Click(Button(id,"reset"));
+            Set(id,0,0,1);Click(Button(id));check(id+" accepts a one-second countdown",state.Running && state.DurationSeconds==1);Click(Button(id,"reset"));
         }
-        Capture("running");Capture("running-150",1.5);Capture("running-200",2);
-        foreach(bool focus in new[]{false,true})
-        {
-            Click(Button(focus,"reset"));var entry=Entry(focus,focus?"Focus minutes":"Timer duration in minutes");
-            check((focus?"Focus":"Timer")+" Reset restores editable ready state",AutomationProperties.GetItemStatus(Button(focus))=="Start" && !Button(focus,"reset").IsEnabled && entry.IsEnabled);
-            entry.Text=focus?"0":"NaN";check((focus?"Focus":"Timer")+" rejects invalid duration inline",!Button(focus).IsEnabled);
-            entry.Text=focus?"25":"5";
-        }
-        var draft=Entry(false,"Timer duration in minutes");draft.Focus();draft.Text="7.5";draft.Select(0,2);app.SaveSession();await Task.Delay(60);
-        check("Heartbeat preserves duration draft and selection",draft.Text=="7.5" && draft.SelectionStart==0 && draft.SelectionLength==2);
-        int unchanged=View(false).Refreshes;app.PublishUpdate(RuntimeChange.Audio|RuntimeChange.Media);
-        check("Audio and media updates do not refresh countdown controls",View(false).Refreshes==unchanged);
-        app.Session.Timer.Start(90,DateTimeOffset.UtcNow.AddSeconds(-30));app.SaveSession();
-        check("Progress reflects elapsed session time",Diagnostics.Descendants(View(false)).OfType<ProgressBar>().Single().Value is >.33 and <.35);
-        check("Timer started from another surface shows its actual duration",Entry(false,"Timer duration in minutes").Text=="1.5" && AutomationProperties.GetItemStatus(Button(false))=="Pause");
-        Click(Button(false,"reset"));
-        // Expiration uses the existing absolute-deadline service, without real notifications.
-        app.Session.Timer.Start(60,DateTimeOffset.UtcNow.AddSeconds(-61));app.CheckCountdowns();
-        check("Finished timer displays completion and can restart",AutomationProperties.GetItemStatus(Button(false))=="Start" && Button(false,"reset").IsEnabled && Diagnostics.Descendants(View(false)).OfType<TextBlock>().Any(t=>t.Text=="Complete"));
-        app.Session.Focus.Start(1,DateTimeOffset.UtcNow.AddSeconds(-2),"work");var focusRun=app.Session.Focus.RunId;app.CheckCountdowns();
-        check("Focus transitions to break with the same Pause action",app.Session.Focus.Phase=="break" && app.Session.Focus.Running && app.Session.Focus.RunId==focusRun && AutomationProperties.GetItemStatus(Button(true))=="Pause");Capture("break");
-        app.Session.Focus.Reset();app.Session.Timer.Reset();app.SaveSession();
-        var previous=View(false);island.SelectPage("media",false);await Task.Delay(80);int refreshes=previous.Refreshes;app.SaveSession();
-        check("Hidden countdown releases its heartbeat subscription",!previous.Subscribed && previous.Refreshes==refreshes);
-        island.SelectPage("focus",false);await Task.Delay(80);check("Reopening countdown resumes visible updates",View(false).Subscribed);
+        Set("timer",0,0,0);var hours=Input("timer","Hours");
+        hours.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice,PresentationSource.FromVisual(island),0,Key.Down){RoutedEvent=Keyboard.PreviewKeyDownEvent});
+        check("Keyboard down wraps zero hours to 99",hours.Text=="99");
+        hours.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice,PresentationSource.FromVisual(island),0,Key.Up){RoutedEvent=Keyboard.PreviewKeyDownEvent});
+        check("Keyboard up wraps 99 hours to zero",hours.Text=="00");
+        var manual=Input("timer","Seconds");manual.Text="7";manual.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice,PresentationSource.FromVisual(island),0,Key.Enter){RoutedEvent=Keyboard.PreviewKeyDownEvent});check("Manual single digit commits as two digits",manual.Text=="07");
+        app.Session.Timer.Reset();s.TimerDurationSeconds=0;
+        typeof(OverlayWindow).GetMethod("TogglePeekClock",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!.Invoke(island,new object[]{"timer"});
+        check("Quick preview cannot start a zero duration",!app.Session.Timer.Running);
+        app.Session.Timer.Start(DurationParts.MaximumSeconds,DateTimeOffset.UtcNow);
+        typeof(OverlayWindow).GetMethod("ExtendPeekClock",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)!.Invoke(island,new object[]{"timer"});
+        check("Quick extension respects the 99-hour limit",app.Session.Timer.DurationSeconds<=DurationParts.MaximumSeconds && app.Session.Timer.Remaining(DateTimeOffset.UtcNow)<=DurationParts.MaximumSeconds);
+        app.Session.Timer.Reset();s.TimerDurationSeconds=300;app.SaveSession();
+        Set("timer",0,7,9);var draft=Input("timer","Minutes");draft.Focus();draft.SelectAll();app.SaveSession();
+        check("Heartbeat preserves manual input and selection",draft.Text=="07" && draft.SelectionLength==2);
+        var paste=new DataObjectPastingEventArgs(new DataObject(DataFormats.UnicodeText,"bad"),false,DataFormats.UnicodeText){RoutedEvent=DataObject.PastingEvent};draft.RaiseEvent(paste);check("Invalid pasted duration text is rejected",paste.CommandCancelled);
+        Set("focus",0,0,2);Set("break",0,0,7);Click(Button("focus"));app.Session.Focus.Deadline=DateTimeOffset.UtcNow.AddSeconds(-1);app.CheckCountdowns();
+        check("Focus starts a seconds-precision break",app.Session.Focus.Phase=="break" && app.Session.Focus.DurationSeconds==7 && app.Session.Focus.Remaining(DateTimeOffset.UtcNow)>5);Click(Button("focus","reset"));
+        app.Session.Timer.Start(3723,DateTimeOffset.UtcNow);app.SaveSession();check("Externally started countdown synchronizes all three components",Input("timer","Hours").Text=="01" && Input("timer","Minutes").Text=="02" && Input("timer","Seconds").Text=="03");Click(Button("timer","reset"));
         foreach(double width in new[]{300d,526d})
-        {
-            s.PanelWidth=width;app.ChangeSettings();await Task.Delay(90);island.SelectPage("focus",false);island.UpdateLayout();
-            foreach(bool focus in new[]{false,true})
-            {
-                var view=View(focus);var bounds=new Rect(0,0,view.ActualWidth,view.ActualHeight);
-                check((focus?"Focus":"Timer")+" actions fit at "+width+" DIP",Diagnostics.Descendants(view).OfType<Button>().All(b=>{var r=b.TransformToAncestor(view).TransformBounds(new Rect(0,0,b.ActualWidth,b.ActualHeight));return r.Left>=-.5 && r.Right<=bounds.Right+.5 && r.Bottom<=bounds.Bottom+.5;}));
-            }
-            if(width==300)check("Narrow panels stack Timer and Focus",View(true).TranslatePoint(new Point(),island).Y>View(false).TranslatePoint(new Point(),island).Y+100);
-            Capture("ready-"+width);
-        }
-        s.CompactLayout=false;app.ChangeSettings();await Task.Delay(100);island.Reveal(false);
-        foreach(bool focus in new[]{false,true}){Click(Button(focus));check("Classic "+(focus?"Focus":"Timer")+" uses the same state-driven action",AutomationProperties.GetItemStatus(Button(focus))=="Pause");Click(Button(focus,"reset"));}
-        Capture("classic");
-        File.WriteAllText(Path.Combine(directory,"capture-notes.txt"),"Isolated synthetic profile. No personal notes, clipboard, provider keys or network AI requests. 150/200% captures are WPF raster exports, not physical monitor DPI tests. Countdown completion delivery and sound disabled only in this fixture.");
+        {s.PanelWidth=width;app.ChangeSettings();await Task.Delay(100);island.SelectPage("focus",false);island.UpdateLayout();foreach(string id in new[]{"timer","focus"}){var v=View(id);check(id+" picker fits at panel width "+width,Diagnostics.Descendants(v).OfType<TextBox>().All(t=>{var r=t.TransformToAncestor(v).TransformBounds(new Rect(t.RenderSize));return r.Left>=-.5 && r.Right<=v.ActualWidth+.5;}));}Capture(island,"countdowns-"+width);}
+        foreach(string theme in new[]{"Light","Dark"})
+        {s.WindowTheme=theme;var window=new SettingsWindow(app){Width=1000,Height=850,ShowActivated=false};try{window.Show();window.OpenCategory("Timers");await Task.Delay(100);check("Settings "+theme+" uses shared hour minute second editors",Diagnostics.Descendants(window).OfType<DurationPicker>().Count()==3);Capture(window,"countdowns-settings-"+theme);}finally{window.Close();}}
+        s.CompactLayout=false;app.ChangeSettings();island.Reveal(false);await Task.Delay(100);check("Classic panel uses the same duration picker",Diagnostics.Descendants(island).OfType<DurationPicker>().Any(p=>p.IsVisible));
     }
 }

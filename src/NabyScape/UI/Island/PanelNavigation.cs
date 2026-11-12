@@ -12,7 +12,7 @@ public sealed partial class OverlayWindow
     private Point? panelDown;
     private bool panelSwiped;
     private static bool PanelGestureBlocked(DependencyObject? source)
-    {for(var node=source;node!=null;node=node is Visual?VisualTreeHelper.GetParent(node):LogicalTreeHelper.GetParent(node))if(node is ButtonBase or TextBoxBase or Slider or Thumb or ScrollBar or ComboBox || node is FrameworkElement f && f.Tag as string is "file-drag" or "media-popover")return true;return false;}
+    {for(var node=source;node!=null;node=node is Visual?VisualTreeHelper.GetParent(node):LogicalTreeHelper.GetParent(node))if(node is ButtonBase or TextBoxBase or Slider or Thumb or ScrollBar or ComboBox or DurationPicker || node is FrameworkElement f && f.Tag as string is "file-drag" or "media-popover")return true;return false;}
     private bool CanPanelSwipe=>expanded && app.Settings.CompactLayout && app.Settings.PanelSwipe && !commandOpen && !assistantOpen;
     internal bool RoutePanelWheel(int delta,bool horizontal,DependencyObject? source)
     {
@@ -20,6 +20,7 @@ public sealed partial class OverlayWindow
         bool countdownEditor=false;Control? editor=null;
         for(var parent=source;parent!=null;parent=parent is Visual?VisualTreeHelper.GetParent(parent):LogicalTreeHelper.GetParent(parent))
         {
+            if(parent is DurationPicker)return false;
             if(parent is CountdownView)countdownEditor=true;
             if(editor==null && parent is (TextBoxBase or PasswordBox))editor=(Control)parent;
         }

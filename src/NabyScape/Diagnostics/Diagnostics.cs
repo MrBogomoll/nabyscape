@@ -390,7 +390,7 @@ internal static class Diagnostics
 
             Click("Reset preview timer");Check("Preview timer reset clears its saved deadline",app.Session.Timer.Remaining(DateTimeOffset.UtcNow)==0 && app.Store.Load<SessionState>("session").Timer.RemainingSeconds==0);
 
-            overlay.NavigatePeek(1);await Task.Delay(350);Check("Preview arrow advances to Focus",overlay.PeekPage=="focus");Click("Start or pause preview focus");Check("Preview focus uses the configured work duration",app.Session.Focus.Running && app.Session.Focus.Phase=="work" && app.Session.Focus.Remaining(DateTimeOffset.UtcNow)>app.Settings.FocusMinutes*60-5);Click("Reset preview focus");CaptureContour("hover-focus");
+            overlay.NavigatePeek(1);await Task.Delay(350);Check("Preview arrow advances to Focus",overlay.PeekPage=="focus");Click("Start or pause preview focus");Check("Preview focus uses the configured work duration",app.Session.Focus.Running && app.Session.Focus.Phase=="work" && app.Session.Focus.Remaining(DateTimeOffset.UtcNow)>app.Settings.FocusSeconds-5);Click("Reset preview focus");CaptureContour("hover-focus");
 
             var previewEvent=app.Calendar.Add("Design review",DateTimeOffset.UtcNow.AddMinutes(15),DateTimeOffset.UtcNow.AddMinutes(45),"https://example.com/meeting");overlay.SelectPeek("calendar");await Task.Delay(350);Check("Calendar preview shows the upcoming local event and meeting action",Descendants(overlay).OfType<TextBlock>().Any(t=>t.Text=="Design review") && ActionButton("Join preview meeting").IsVisible);CaptureContour("hover-calendar");app.Calendar.Remove(previewEvent.Id);
 

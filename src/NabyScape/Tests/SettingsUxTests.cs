@@ -9,6 +9,21 @@ internal static class SettingsUxTests
     internal static void Run(Action<string,Action> test)
     {
         void Assert(bool value){if(!value)throw new Exception("Settings UX invariant failed");}
+        test("Exact countdown seconds survive normalization and legacy minute migration",()=>
+        {
+            var old=new Settings{FocusMinutes=37,BreakMinutes=11};old.Normalize();Assert(old.FocusSeconds==2220 && old.BreakSeconds==660);
+            old.FocusSeconds=3661;old.BreakSeconds=7;old.TimerDurationSeconds=DurationParts.MaximumSeconds;
+            var restored=System.Text.Json.JsonSerializer.Deserialize<Settings>(System.Text.Json.JsonSerializer.Serialize(old))!;restored.Normalize();
+            Assert(restored.FocusSeconds==3661 && restored.BreakSeconds==7 && restored.TimerDurationSeconds==359999);
+        });
+        test("Duration fields wrap independently at 59 and 99 in both directions",()=>
+        {
+            Assert(DurationParts.Wrap(59,1,59)==0 && DurationParts.Wrap(0,-1,59)==59);
+            Assert(DurationParts.Wrap(99,1,99)==0 && DurationParts.Wrap(0,-1,99)==99);
+            Assert(DurationParts.Wrap(58,5,59)==3 && DurationParts.Wrap(0,-125,59)==55);
+        });
+        test("Countdown display preserves total hours beyond one day",()=>
+        {Assert(Countdown.FormatSeconds(359999)=="99:59:59" && Countdown.FormatSeconds(90000)=="25:00:00");});
         test("Compact idle clock stays visible without enabling its widget",()=>
         {
             Assert(CompactDockPresentation.ShowClock(false,true,false));

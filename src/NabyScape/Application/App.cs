@@ -225,8 +225,8 @@ public sealed partial class App : Application
             if(Session.Focus.Phase=="work")
             {
                 // The break starts at the actual work deadline, even across sleep, so a long sleep never starts a fresh break.
-                var end=focusDeadline!.Value.AddMinutes(Settings.BreakMinutes);
-                if(end>now) { Session.Focus.Start((end-now).TotalSeconds,now,"break",preserveRunId:true);Session.Focus.DurationSeconds=Settings.BreakMinutes*60; PostNotice(new("focus",Localization.Text("Focus complete"),Localization.Text("Time for a short break."))); }
+                var end=focusDeadline!.Value.AddSeconds(Settings.BreakSeconds);
+                if(end>now) { Session.Focus.Start((end-now).TotalSeconds,now,"break",preserveRunId:true);Session.Focus.DurationSeconds=Settings.BreakSeconds; PostNotice(new("focus",Localization.Text("Focus complete"),Localization.Text("Time for a short break."))); }
                 else { Session.Focus.Reset();PostNotice(new("focus",Localization.Text("Focus session complete"),Localization.Text("Your focus session and break have finished."))); }
             }
             else { Session.Focus.Reset();PostNotice(new("focus",Localization.Text("Break finished"),Localization.Text("Ready for your next focus session."))); }

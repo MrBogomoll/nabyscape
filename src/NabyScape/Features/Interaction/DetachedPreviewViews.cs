@@ -21,12 +21,12 @@ internal sealed class DetachedPreviewView : IDisposable
     private readonly Action openMain;
     private readonly StackPanel panel=new(){Margin=new(6,2,6,6)};
     private readonly DispatcherTimer noteSave=new(){Interval=TimeSpan.FromMilliseconds(350)};
-    private TextBlock? title,detail,time,status;
+    private TextBlock? title,detail,status;
     private Image? artwork;
     private ComboBox? sessions;
     private Slider? volume,seek;
     private Button? toggle,previous,next;
-    private TextBox? notes,noteTitle,minutes;
+    private TextBox? notes,noteTitle;
     private ProgressBar? progress,memory;
     private ListBox? shelf;
     private Calendar? calendar;
@@ -65,28 +65,7 @@ internal sealed class DetachedPreviewView : IDisposable
         volume=new Slider{Minimum=0,Maximum=100};UI.Named(volume,Localization.Text("Output volume"));volume.ValueChanged+=(_,_)=>{if(!updating)app.Audio.SetVolume(volume.Value/100);};var volumeRow=new Grid();volumeRow.ColumnDefinitions.Add(new(){Width=new GridLength(52)});volumeRow.ColumnDefinitions.Add(new());volumeRow.Children.Add(UI.Text(Localization.Text("Volume"),11,UI.Muted));Grid.SetColumn(volume,1);volumeRow.Children.Add(volume);Add(volumeRow);
         var mute=Action(Localization.Text("Mute / unmute"),()=>app.Audio.ToggleMute());mute.FontSize=11;mute.Padding=new(8,4,8,4);mute.MinHeight=28;Add(mute);
     }
-    private Countdown Clock=>kind=="timer"?app.Session.Timer:app.Session.Focus;
-    private void BuildClock()
-    {
-        detail=UI.Text(kind=="focus"?Localization.Text("Focus session"):Localization.Text("Countdown"),12,UI.Muted);Add(detail);
-        time=UI.Text("00:00",38);time.FontWeight=FontWeights.Medium;Typography.SetNumeralAlignment(time,FontNumeralAlignment.Tabular);Add(time);
-        progress=new ProgressBar{Minimum=0,Maximum=1,Height=4,Background=UI.Brush("#34363C"),Foreground=Brushes.White};Add(progress);
-        minutes=UI.Input(kind=="timer"?Localization.Text("Timer minutes"):Localization.Text("Focus minutes"),(kind=="timer"?5:app.Settings.FocusMinutes).ToString());minutes.MaxLength=4;Add(UI.Row(UI.Text(Localization.Text("Minutes  "),12,UI.Muted),minutes));minutes.Width=80;
-        toggle=Action(Localization.Text("Start"),ToggleClock);Add(UI.Row(toggle,Action(Localization.Text("Reset"),()=>{Clock.Reset();app.SaveSession();})));
-        status=UI.Text("",11,UI.Muted);Add(status);
-    }
-    private void ToggleClock()
-    {
-        var now=DateTimeOffset.UtcNow;
-        if(Clock.Running)Clock.Pause(now);
-        else if(Clock.Remaining(now)>0)Clock.Resume(now);
-        else
-        {
-            if(!int.TryParse(minutes!.Text,out var value) || value<1 || value>1440){status!.Text=Localization.Text("Enter 1–1440 minutes.");return;}
-            status!.Text="";Clock.Start(value*60,now,kind=="focus"?"work":"");
-        }
-        app.SaveSession();Refresh();
-    }
+    private void BuildClock()=>Add(new CountdownView(app,kind=="focus"));
     private void BuildNotes()
     {
         Add(UI.Caption("Note title (optional)",11,UI.Muted));noteTitle=UI.CaptionInput("Note title",app.Productivity.NoteTitle,"Leave blank to use the first phrase.");noteTitle.MaxLength=ProductivityService.MaxNoteTitleLength;noteTitle.SetResourceReference(Control.BackgroundProperty,"ControlFill");noteTitle.SetResourceReference(Control.BorderBrushProperty,"ControlBorder");Add(noteTitle);
@@ -198,10 +177,6 @@ internal sealed class DetachedPreviewView : IDisposable
                 previous!.IsEnabled=media.CanPrevious;next!.IsEnabled=media.CanNext;toggle!.IsEnabled=media.CanToggle;toggle.Content=media.Playing?Localization.Text("Pause"):Localization.Text("Play");
                 volume!.IsEnabled=app.Audio.Available;if(!volume.IsMouseCaptureWithin && !volume.IsKeyboardFocusWithin)volume.Value=app.Audio.Volume*100;
                 var timeline=media.Timeline();seek!.IsEnabled=media.CanSeek && timeline.duration>0;if(!seek.IsMouseCaptureWithin && !seek.IsKeyboardFocusWithin)seek.Value=timeline.duration>0?timeline.elapsed/timeline.duration:0;
-            }
-            else if(kind is "timer" or "focus")
-            {
-                var now=DateTimeOffset.UtcNow;double remaining=Clock.Remaining(now);time!.Text=remaining>0?Clock.Display(now):int.TryParse(minutes!.Text,out int ready) && ready>=1 && ready<=1440?Countdown.FormatSeconds(ready*60):"—";progress!.Value=remaining>0?Clock.Progress(now):0;toggle!.Content=Clock.Running?Localization.Text("Pause"):Clock.Remaining(now)>0?Localization.Text("Resume"):Localization.Text("Start");minutes!.IsEnabled=!Clock.Running && Clock.Remaining(now)<=0;detail!.Text=kind=="focus"?(Clock.Phase=="break"?Localization.Text("Break"):Localization.Text("Focus session")):Localization.Text("Countdown");
             }
             else if(kind=="notes")SyncNotes();else if(kind=="files")RefreshShelf();else if(kind=="calendar")RenderEvents();
             else if(kind=="system")
