@@ -132,6 +132,7 @@ internal static class Diagnostics
             if(Environment.GetCommandLineArgs().Contains("--lyrics-provider-live-only")){await LyricsPopoverDiagnostics.RunLive(app,directory);return;}
             if(Environment.GetCommandLineArgs().Contains("--lyrics-popover-only")){await LyricsPopoverDiagnostics.Run(app,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--lyrics-power-ui-only")){await LyricsPowerDiagnostics.Run(app,overlay,Check);return;}
+            if(Environment.GetCommandLineArgs().Contains("--panel-wheel-only")){await PanelWheelDiagnostics.Run(app,overlay,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--volume-lyrics-only")){await VolumeLyricsDiagnostics.Run(app,overlay,directory,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--closed-lyrics-fallback-only")){await ClosedLyricsFallbackDiagnostics.Run(app,overlay,Check);return;}
             if(Environment.GetCommandLineArgs().Contains("--removed-activities-only")){await RemovedActivitiesDiagnostics.Run(app,overlay,Check);return;}

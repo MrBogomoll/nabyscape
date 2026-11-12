@@ -30,6 +30,7 @@ internal static class VolumeLyricsDiagnostics
         Import("Строка песни");app.ChangeSettings();dock.Collapse();await Task.Delay(250);
         check("Volume lyrics fixture starts with a synced vocal line",dock.HeaderLabel.Text=="Строка песни");
         check("Music shows the volume bar instead of the clock",Field("feedbackLevel")?.IsVisible==true && Field("compactClock")?.IsVisible!=true);
+        check("Music shows its volume percentage before any feedback event",Field("feedbackInlineValue") is TextBlock initial && initial.IsVisible && initial.Text.EndsWith("%",StringComparison.Ordinal));
         dock.DiagnosticFeedFeedback(false,43);dock.UpdateLayout();
         check("Volume feedback preserves the current lyric",dock.HeaderLabel.Text=="Строка песни");
         check("Shared feedback preserves track artwork and hides the volume icon",dock.ClosedCoverVisible && Field("feedbackIcon")?.IsVisible!=true);
@@ -45,11 +46,11 @@ internal static class VolumeLyricsDiagnostics
         check("Narrow dock keeps lyric and volume in separate non-overlapping columns",dock.HeaderLabel.Text.Length>0 && value?.IsVisible==true && value.TransformToAncestor(dock).Transform(new Point(value.ActualWidth,0)).X<=dock.HeaderLabel.TransformToAncestor(dock).Transform(new Point()).X);Capture("lyrics-volume-narrow");
         dock.DiagnosticFeedFeedback(true,70);check("Brightness retains standalone feedback",dock.HeaderLabel.Text=="70%" && value?.IsVisible!=true);
         typeof(OverlayWindow).GetField("feedbackUntil",BindingFlags.Instance|BindingFlags.NonPublic)!.SetValue(dock,DateTimeOffset.MinValue);Update();await Task.Delay(120);
-        check("Feedback expiry restores lyrics and removes the left volume readout",dock.HeaderLabel.Text=="Следующая строка" && value?.IsVisible!=true);
+        check("Feedback expiry preserves lyrics and the persistent music percentage",dock.HeaderLabel.Text=="Следующая строка" && value?.IsVisible==true && value.Text.EndsWith("%",StringComparison.Ordinal));
         s.ClosedMediaContent="Title";app.ChangeSettings();dock.DiagnosticFeedFeedback(false,42);
         check("Song-title mode also keeps artwork beside volume",dock.HeaderLabel.Text==app.Media.Title && dock.ClosedCoverVisible && value?.Text=="42%");
         app.Media.DiagnosticPlayback(false);typeof(OverlayWindow).GetField("feedbackUntil",BindingFlags.Instance|BindingFlags.NonPublic)!.SetValue(dock,DateTimeOffset.MinValue);Update();await Task.Delay(100);
-        check("Stopping music restores the clock, hides the volume bar and keeps Naby",Field("compactClock")?.IsVisible==true && Field("feedbackLevel")?.IsVisible!=true && Field("closedAssistant")?.IsVisible==true);
+        check("Stopping music restores the clock, hides the volume bar and keeps Naby",Field("compactClock")?.IsVisible==true && Field("feedbackLevel")?.IsVisible!=true && value?.IsVisible!=true && Field("closedAssistant")?.IsVisible==true);
         dock.DiagnosticFeedFeedback(false,43);check("Idle volume feedback still shows its percentage and keeps Naby",dock.HeaderLabel.Text=="43%" && Field("closedAssistant")?.IsVisible==true);
     }
 }

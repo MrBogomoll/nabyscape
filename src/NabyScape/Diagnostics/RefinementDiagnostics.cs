@@ -57,8 +57,8 @@ internal static class RefinementDiagnostics
             before=overlay.ActivePage;ResetWheel();for(int i=0;i<4;i++)overlay.RoutePanelWheel(30,true,new TextBlock());
             Check("horizontal trackpad deltas accumulate into one page change",overlay.ActivePage!=before);
             overlay.OpenFeaturePage("notes");await Settle();
-            var editor=Tree(overlay).OfType<TextBox>().Single(t=>AutomationProperties.GetName(t)=="Quick notes");editor.Focus();before=overlay.ActivePage;ResetWheel();
-            Check("focused text editor keeps its vertical wheel",!overlay.RoutePanelWheel(-120,false,editor) && overlay.ActivePage==before);
+            var editor=Tree(overlay).OfType<TextBox>().First(t=>t.IsVisible && t.AcceptsReturn);editor.Text=string.Join("\n",Enumerable.Range(1,80).Select(i=>"Note line "+i));editor.Focus();await Settle();before=overlay.ActivePage;ResetWheel();
+            Check("focused overflowing text editor keeps its vertical wheel",editor.ExtentHeight>editor.ViewportHeight+1 && !overlay.RoutePanelWheel(-120,false,editor) && overlay.ActivePage==before);
             var rows=new StackPanel();for(int i=0;i<24;i++)rows.Children.Add(new TextBlock{Text="Native scrolling row "+i,Height=24});
             var longList=new ScrollViewer{Width=240,Height=96,Content=rows,VerticalScrollBarVisibility=ScrollBarVisibility.Auto};
             longList.Measure(new Size(240,96));longList.Arrange(new Rect(0,0,240,96));longList.UpdateLayout();before=overlay.ActivePage;ResetWheel();

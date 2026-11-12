@@ -40,8 +40,8 @@ internal static class ScrollLyricsDiagnostics
         check("Wheel on panel navigation changes slide even with a long clipboard history",island.ActivePage!="clips");
         island.ShowTools("clips",false);await Task.Delay(150);inner=Field<ScrollViewer>("clipboardScroll");check("Returning to clipboard retains its own list position",inner.VerticalOffset>0 && outer.VerticalOffset==0);
         Field<PeekWheelAccumulator>("panelWheel").Reset();row=Diagnostics.Descendants(inner).OfType<Button>().First(b=>AutomationProperties.GetName(b).StartsWith("View "));check("Horizontal gesture can still leave the clipboard list",island.RoutePanelWheel(120,true,row) && island.ActivePage!="clips");
-        island.ShowTools("notes",false);await Task.Delay(60);var note=Diagnostics.Descendants(island).OfType<TextBox>().Single(text=>System.Windows.Automation.AutomationProperties.GetName(text)=="Quick notes");
-        check("Notes keep their editor wheel instead of switching slides",!island.RoutePanelWheel(-120,false,note) && island.ActivePage=="notes");island.ShowTools("clips",false);await Task.Delay(80);
+        island.ShowTools("notes",false);await Task.Delay(60);var note=Diagnostics.Descendants(island).OfType<TextBox>().First(text=>text.IsVisible && text.AcceptsReturn);note.Text=string.Join("\n",Enumerable.Range(1,80).Select(i=>"Note line "+i));note.Focus();await Task.Delay(80);island.UpdateLayout();
+        check("An actively edited long note keeps native scrolling",note.ExtentHeight>note.ViewportHeight+1 && !island.RoutePanelWheel(-120,false,note) && island.ActivePage=="notes");island.ShowTools("clips",false);await Task.Delay(80);
         foreach(double width in new[]{300d,526d})
         {
             s.PanelWidth=width;s.PanelMaxHeight=300;app.ChangeSettings();await Task.Delay(100);island.UpdateLayout();inner=Field<ScrollViewer>("clipboardScroll");

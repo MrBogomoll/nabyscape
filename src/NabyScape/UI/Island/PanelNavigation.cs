@@ -17,15 +17,30 @@ public sealed partial class OverlayWindow
     internal bool RoutePanelWheel(int delta,bool horizontal,DependencyObject? source)
     {
         if(!CanPanelSwipe)return false;
-        bool countdownEditor=false;for(var parent=source;parent!=null;parent=parent is Visual?VisualTreeHelper.GetParent(parent):LogicalTreeHelper.GetParent(parent))if(parent is CountdownView){countdownEditor=true;break;}
+        bool countdownEditor=false;Control? editor=null;
+        for(var parent=source;parent!=null;parent=parent is Visual?VisualTreeHelper.GetParent(parent):LogicalTreeHelper.GetParent(parent))
+        {
+            if(parent is CountdownView)countdownEditor=true;
+            if(editor==null && parent is (TextBoxBase or PasswordBox))editor=(Control)parent;
+        }
         if(mediaControls?.IsOpen==true && mediaControls.ContainsControl(source))return false;
+        // Hovering an input is navigation. Only an actively edited, overflowing
+        // multiline document needs native vertical scrolling; horizontal gestures leave it.
+        if(!countdownEditor && !horizontal && editor?.IsKeyboardFocusWithin==true)
+        {
+            if(editor is TextBox text && text.AcceptsReturn && text.ExtentHeight>text.ViewportHeight+1)return false;
+            if(editor is RichTextBox rich && rich.Template.FindName("PART_ContentHost",rich) is ScrollViewer content && content.ScrollableHeight>1)return false;
+        }
+        bool insideEditor=editor!=null;
         for(var node=source;node!=null;node=node is Visual?VisualTreeHelper.GetParent(node):LogicalTreeHelper.GetParent(node))
         {
-            if(!countdownEditor && node is (TextBoxBase or PasswordBox))return false;
+            if(node==editor){insideEditor=false;continue;}
+            // Ignore the input's own template viewport when the editor does not own this wheel.
+            if(insideEditor)continue;
             // The outer panel viewport must not steal wheel gestures from its navigation.
             // An inner content viewport (even at its end) owns vertical wheel input.
             if(!horizontal && node is FrameworkElement region && region.Tag as string=="panel-navigation")break;
-            if(!horizontal && node is ScrollViewer viewer && (viewer.Tag as string=="panel-content-scroll" || viewer.ScrollableHeight>1 && !(viewer==scroll && activePage=="focus" && bodyWidth>=310 && viewer.ScrollableHeight<48)))return false;
+            if(!horizontal && node is ScrollViewer viewer && (viewer.ScrollableHeight>1 && !(viewer==scroll && activePage=="focus" && bodyWidth>=310 && viewer.ScrollableHeight<48)))return false;
         }
         int direction=panelWheel.Push(horizontal?delta:-delta,Environment.TickCount64);
         if(direction!=0)CyclePage(direction,true);return true;

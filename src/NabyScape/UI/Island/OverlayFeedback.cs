@@ -45,14 +45,19 @@ public sealed partial class OverlayWindow
     }
     private void RefreshFeedback()
     {
-        bool visible=FeedbackVisible;feedbackLeft.Visibility=visible?Visibility.Visible:Visibility.Collapsed;
+        bool visible=FeedbackVisible;feedbackLeft.Visibility=visible || ClosedMediaActive?Visibility.Visible:Visibility.Collapsed;
         feedbackLevel.Visibility=visible || ClosedMediaActive?Visibility.Visible:Visibility.Collapsed;
-        if(!visible){feedbackLevel.BeginAnimation(ProgressBar.ValueProperty,null);feedbackLevel.Value=app.Audio.Muted?0:Math.Clamp(app.Audio.Volume,0,1);}
+        if(!visible)
+        {
+            feedbackLevel.BeginAnimation(ProgressBar.ValueProperty,null);feedbackLevel.Value=app.Audio.Muted?0:Math.Clamp(app.Audio.Volume,0,1);
+            feedbackInlineValue.Text=app.Audio.Muted?"0%":$"{feedbackLevel.Value*100:0}%";
+            feedbackLeft.ToolTip=app.Audio.Muted?Localization.Text("Muted"):Localization.Text("Volume")+" · "+feedbackInlineValue.Text;
+        }
         // At minimum width retain space for Naby and the standalone percentage too.
         double reserve=27+40+(AssistantCharacterAvailable?Math.Clamp(app.Settings.Height-4,24,32)+9:0)+compact.Padding.Left+compact.Padding.Right+7;
         feedbackLevel.Width=visible && !InlineVolumeFeedback?Math.Clamp(ClosedContentWidth-reserve,0,34):34;
         feedbackIcon.Visibility=visible && !InlineVolumeFeedback?Visibility.Visible:Visibility.Collapsed;
-        feedbackInlineValue.Visibility=InlineVolumeFeedback?Visibility.Visible:Visibility.Collapsed;UpdateClosedMediaIcon();
+        feedbackInlineValue.Visibility=InlineVolumeFeedback || !visible && ClosedMediaActive?Visibility.Visible:Visibility.Collapsed;UpdateClosedMediaIcon();
         // Standalone feedback owns the summary; shared feedback keeps the lyric column flexible.
         summary.MinWidth=PrimaryFeedbackVisible?40:0;RefreshCompactOptionalVisibility();
         if(!visible){feedbackUntil=default;feedbackTick.Stop();}

@@ -23,6 +23,15 @@ public sealed partial class OverlayWindow
         get
         {
             double baseline=app.Settings.Width;
+            if(ClosedMediaActive)
+            {
+                // Persistent percentage, artwork, level and Naby must leave real room for content,
+                // even when the saved idle width is the minimum 180 DIP.
+                double companion=AssistantCharacterAvailable?Math.Clamp(app.Settings.Height-4,24,32)+9:0;
+                double icon=app.Settings.ClosedMediaIcon=="None"?0:29;
+                double minimum=compact.Padding.Left+compact.Padding.Right+48+41+companion+icon+24+(surface.Notch?32:12);
+                baseline=Math.Max(baseline,Math.Min(expandedWidth,minimum));
+            }
             if(!WantsClosedLyrics)return baseline;
             var lines=app.Lyrics.Result.Lines;int index=ClosedLyricIndex;if(index<0)return baseline;
             string text=lines[index].Text;
@@ -35,7 +44,7 @@ public sealed partial class OverlayWindow
                 measuredLyricWidth=Math.Ceiling(formatted.WidthIncludingTrailingWhitespace+Math.Max(0,formatted.OverhangTrailing));
             }
             // Keep artwork, clock, character and notch clear of the lyric text.
-            double chrome=180+compact.Padding.Left+compact.Padding.Right;
+            double chrome=180+48+compact.Padding.Left+compact.Padding.Right;
             return Math.Max(baseline,Math.Min(expandedWidth,measuredLyricWidth+chrome));
         }
     }
